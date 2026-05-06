@@ -1,0 +1,22 @@
+{
+    "items": [
+        {
+            "Name": "Enviroment",
+            "TextColor": {
+                "r": 0.3830187916755676,
+                "g": 1.0,
+                "b": 0.38482430577278139,
+                "a": 1.0
+            },
+            "FontSize": 21,
+            "FontStyle": 1,
+            "ImageColor": {
+                "r": 1.0,
+                "g": 1.0,
+                "b": 1.0,
+                "a": 1.0
+            },
+            "ImageType": 0
+        }
+    ]
+}

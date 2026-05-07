@@ -7,15 +7,13 @@ public class PlayerListUI : MonoBehaviour
     [SerializeField] private Transform playerListContainer;
     [SerializeField] private PlayerIndicator playerItemPrefab;
 
-    private TurnManager turnManager;
+    private TurnManager turnManager => TurnManager.Instance;
     private Dictionary<uint, PlayerIndicator> playerItems = new();
 
     private uint currentActivePlayer = 0;
 
     private void Start()
     {
-        turnManager = TurnManager.Instance;
-
         if (turnManager == null)
         {
             Debug.LogError("TurnManager not found!");

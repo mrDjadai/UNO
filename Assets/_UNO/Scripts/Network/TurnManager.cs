@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class TurnManager : NetworkBehaviour
 {
-    public static TurnManager Instance;
+    public static TurnManager Instance { get; private set; }
 
     public event Action<Dictionary<uint, PlayerInfo>> OnPlayersListUpdated;
     public event Action<uint, string> OnTurnChanged;
@@ -144,6 +144,8 @@ public class TurnManager : NetworkBehaviour
             identity.transform.position = pos;
             identity.transform.LookAt(centerPoint);
         }
+
+        CardManager.Instance.RotateDeckToPlayer();
     }
 
     #endregion
@@ -203,6 +205,14 @@ public class TurnManager : NetworkBehaviour
     public Dictionary<uint, PlayerInfo> GetLocalPlayersInfo()
     {
         return players;
+    }
+
+    public Vector3 GetPlayerPosition(uint playerId)
+    {
+        if (!NetworkServer.spawned.TryGetValue(playerId, out var identity))
+            throw new Exception("Can't find player");
+
+        return identity.transform.position;
     }
 
     #endregion

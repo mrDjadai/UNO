@@ -3,7 +3,15 @@ using UnityEngine;
 
 public class PlayerController : NetworkBehaviour
 {
+    [SerializeField] private GameObject cameraOrigin;
+    public readonly SyncList<CardData> Hand = new();
+
     public uint PlayerId => netId;
+
+    private void Start()
+    {
+        cameraOrigin.SetActive(isLocalPlayer);
+    }
 
     public override void OnStartServer()
     {

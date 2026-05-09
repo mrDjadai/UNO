@@ -6,9 +6,11 @@ using UnityEngine;
 public class TurnManager : NetworkBehaviour
 {
     public static TurnManager Instance { get; private set; }
+    public bool IsStarted => isStarted;
 
+    [SyncVar] private bool isStarted;
     public event Action<Dictionary<uint, PlayerInfo>> OnPlayersListUpdated;
-    public event Action<uint, string> OnTurnChanged;
+    public event Action<uint> OnTurnChanged;
 
     private readonly Dictionary<uint, PlayerInfo> players = new();
     private readonly List<uint> turnOrder = new();
@@ -29,8 +31,6 @@ public class TurnManager : NetworkBehaviour
             item.SetActive(true);
         }
     }
-
-    #region Registration (вызывается из PlayerController)
 
     [Server]
     public void RegisterPlayer(PlayerController player)
@@ -73,14 +73,13 @@ public class TurnManager : NetworkBehaviour
         UpdateClients();
     }
 
-    #endregion
-
-    #region Turn Logic
 
     [Server]
     public void StartGame()
     {
         if (turnOrder.Count == 0) return;
+        isStarted = true;
+        CardManager.Instance.OnStartGame();
 
         currentTurnIndex = 0;
         NotifyTurnChanged();
@@ -110,13 +109,13 @@ public class TurnManager : NetworkBehaviour
     [Server]
     public uint GetCurrentPlayer()
     {
+        if (!IsStarted)
+        {
+            return 0;
+        }
         if (turnOrder.Count == 0) return 0;
         return turnOrder[currentTurnIndex];
     }
-
-    #endregion
-
-    #region Positions (круг)
 
     [Server]
     private void RecalculatePositions()
@@ -144,13 +143,7 @@ public class TurnManager : NetworkBehaviour
             identity.transform.position = pos;
             identity.transform.LookAt(centerPoint);
         }
-
-        CardManager.Instance.RotateDeckToPlayer();
     }
-
-    #endregion
-
-    #region Sync (без Dictionary в RPC!)
 
     [ClientRpc]
     private void RpcUpdatePlayers(List<PlayerInfo> playersList)
@@ -166,9 +159,9 @@ public class TurnManager : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void RpcTurnChanged(uint playerId, string playerName)
+    private void RpcTurnChanged(uint playerId)
     {
-        OnTurnChanged?.Invoke(playerId, playerName);
+        OnTurnChanged?.Invoke(playerId);
     }
 
     [Server]
@@ -185,13 +178,8 @@ public class TurnManager : NetworkBehaviour
 
         if (!players.ContainsKey(id)) return;
 
-        string name = players[id].playerName;
-        RpcTurnChanged(id, name);
+        RpcTurnChanged(id);
     }
-
-    #endregion
-
-    #region Helpers
 
     private void UpdatePlayerIndexes()
     {
@@ -209,11 +197,19 @@ public class TurnManager : NetworkBehaviour
 
     public Vector3 GetPlayerPosition(uint playerId)
     {
-        if (!NetworkServer.spawned.TryGetValue(playerId, out var identity))
-            throw new Exception("Can't find player");
+        if (isServer)
+        {
+            if (!NetworkServer.spawned.TryGetValue(playerId, out var identity))
+                throw new Exception("Can't find player on server");
 
-        return identity.transform.position;
+            return identity.transform.position;
+        }
+        else
+        {
+            if (!NetworkClient.spawned.TryGetValue(playerId, out var identity))
+                throw new Exception("Can't find player on client");
+
+            return identity.transform.position;
+        }
     }
-
-    #endregion
 }

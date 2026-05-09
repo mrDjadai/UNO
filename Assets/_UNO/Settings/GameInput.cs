@@ -100,6 +100,33 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""ScrollCards"",
+                    ""type"": ""Value"",
+                    ""id"": ""ebbd6001-9a43-489b-8dec-adc23e8efd61"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""DrawCard"",
+                    ""type"": ""Button"",
+                    ""id"": ""a6be9998-b296-4aa0-9d90-9b437f4dfc8e"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""UseCard"",
+                    ""type"": ""Button"",
+                    ""id"": ""c9580833-3d9d-47b0-8785-ce6cdc4d052e"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -113,6 +140,105 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
                     ""action"": ""Rotate"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""429c18ce-4c04-4a7f-b2ce-18a861875635"",
+                    ""path"": ""<Mouse>/scroll/y"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ScrollCards"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""fb9f2608-8a35-46f0-9caf-93c76de6448a"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ScrollCards"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""834c852b-1abb-4bd0-8059-4d92282a5d77"",
+                    ""path"": ""<Keyboard>/a"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ScrollCards"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""48ddd843-c5b8-4f40-ad6c-fb4bbbf6599a"",
+                    ""path"": ""<Keyboard>/d"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ScrollCards"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""559ec340-ce23-4326-bdc9-7c5c5682cbe9"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ScrollCards"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""dd400974-dae4-4090-894e-a3736b42b1ac"",
+                    ""path"": ""<Keyboard>/leftArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ScrollCards"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""d27bcae2-11e2-4ee0-8413-a253995548f5"",
+                    ""path"": ""<Keyboard>/rightArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ScrollCards"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""9b4d3bcf-ea86-4f7d-b384-a8d2b17f8a47"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""DrawCard"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""602b0bc2-2ee9-499c-b67f-d9faca50fdfa"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""UseCard"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -122,6 +248,9 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
         // Player
         m_Player = asset.FindActionMap("Player", throwIfNotFound: true);
         m_Player_Rotate = m_Player.FindAction("Rotate", throwIfNotFound: true);
+        m_Player_ScrollCards = m_Player.FindAction("ScrollCards", throwIfNotFound: true);
+        m_Player_DrawCard = m_Player.FindAction("DrawCard", throwIfNotFound: true);
+        m_Player_UseCard = m_Player.FindAction("UseCard", throwIfNotFound: true);
     }
 
     ~@GameInput()
@@ -203,6 +332,9 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
     private readonly InputActionMap m_Player;
     private List<IPlayerActions> m_PlayerActionsCallbackInterfaces = new List<IPlayerActions>();
     private readonly InputAction m_Player_Rotate;
+    private readonly InputAction m_Player_ScrollCards;
+    private readonly InputAction m_Player_DrawCard;
+    private readonly InputAction m_Player_UseCard;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -218,6 +350,18 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/Rotate".
         /// </summary>
         public InputAction @Rotate => m_Wrapper.m_Player_Rotate;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/ScrollCards".
+        /// </summary>
+        public InputAction @ScrollCards => m_Wrapper.m_Player_ScrollCards;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/DrawCard".
+        /// </summary>
+        public InputAction @DrawCard => m_Wrapper.m_Player_DrawCard;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/UseCard".
+        /// </summary>
+        public InputAction @UseCard => m_Wrapper.m_Player_UseCard;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -247,6 +391,15 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
             @Rotate.started += instance.OnRotate;
             @Rotate.performed += instance.OnRotate;
             @Rotate.canceled += instance.OnRotate;
+            @ScrollCards.started += instance.OnScrollCards;
+            @ScrollCards.performed += instance.OnScrollCards;
+            @ScrollCards.canceled += instance.OnScrollCards;
+            @DrawCard.started += instance.OnDrawCard;
+            @DrawCard.performed += instance.OnDrawCard;
+            @DrawCard.canceled += instance.OnDrawCard;
+            @UseCard.started += instance.OnUseCard;
+            @UseCard.performed += instance.OnUseCard;
+            @UseCard.canceled += instance.OnUseCard;
         }
 
         /// <summary>
@@ -261,6 +414,15 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
             @Rotate.started -= instance.OnRotate;
             @Rotate.performed -= instance.OnRotate;
             @Rotate.canceled -= instance.OnRotate;
+            @ScrollCards.started -= instance.OnScrollCards;
+            @ScrollCards.performed -= instance.OnScrollCards;
+            @ScrollCards.canceled -= instance.OnScrollCards;
+            @DrawCard.started -= instance.OnDrawCard;
+            @DrawCard.performed -= instance.OnDrawCard;
+            @DrawCard.canceled -= instance.OnDrawCard;
+            @UseCard.started -= instance.OnUseCard;
+            @UseCard.performed -= instance.OnUseCard;
+            @UseCard.canceled -= instance.OnUseCard;
         }
 
         /// <summary>
@@ -308,5 +470,26 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnRotate(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "ScrollCards" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnScrollCards(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "DrawCard" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDrawCard(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "UseCard" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnUseCard(InputAction.CallbackContext context);
     }
 }

@@ -15,17 +15,6 @@ public class CameraRotator : MonoBehaviour
     private float currentVerticalAngle;
     private float currentHorizontalAngle;
 
-    private void OnEnable()
-    {
-        InputManager.Instance.SetCursorLocked(true);
-    }
-
-    private void OnDisable()
-    {
-        InputManager.Instance.SetCursorLocked(false);
-    }
-
-
     private void Update()
     {
         mouseDelta = InputManager.InputActions.Player.Rotate.ReadValue<Vector2>();

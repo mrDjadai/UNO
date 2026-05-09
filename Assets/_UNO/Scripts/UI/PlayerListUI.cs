@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using Mirror;
+using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerListUI : MonoBehaviour
+public class PlayerListUI : NetworkBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Transform playerListContainer;
@@ -12,8 +13,9 @@ public class PlayerListUI : MonoBehaviour
 
     private uint currentActivePlayer = 0;
 
-    private void Start()
+    public override void OnStartClient()
     {
+        base.OnStartClient();
         if (turnManager == null)
         {
             Debug.LogError("TurnManager not found!");
@@ -60,12 +62,12 @@ public class PlayerListUI : MonoBehaviour
         UpdateActiveVisual();
     }
 
-    private void OnTurnChanged(uint playerId, string playerName)
+    private void OnTurnChanged(uint playerId)
     {
         currentActivePlayer = playerId;
         UpdateActiveVisual();
 
-        Debug.Log($"Turn: {playerName}");
+        Debug.Log($"Turn: {playerId}");
     }
 
     private void UpdateActiveVisual()

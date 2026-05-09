@@ -1,6 +1,6 @@
-using System.Collections.Generic;
-using System.Collections;
 using Mirror;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using static CardData;
 
@@ -11,13 +11,14 @@ public class CardManager : NetworkBehaviour
     [SerializeField] private Transform cardSpawnPoint;
     [SerializeField] private Transform pilePoint;
 
+    [SerializeField] private int startCardCount = 7;
+    [SerializeField] private float addCartDelay = 0.1f;
+
     public static CardManager Instance {  get; private set; }
 
     private List<CardData> deck = new();
     private List<CardData> discardPile = new();
-
-    [SyncVar(hook = nameof(OnTopDiscardChanged))]
-    private CardData topDiscard;
+    private CardData currentCard => discardPile[0];
 
     private void Awake()
     {
@@ -31,10 +32,8 @@ public class CardManager : NetworkBehaviour
         }
     }
 
-    public override void OnStartServer()
+    public void OnStartGame()
     {
-        base.OnStartServer();
-
         GenerateDeck();
         ShuffleDeck();
 
@@ -47,10 +46,37 @@ public class CardManager : NetworkBehaviour
                 firstCard = deck[i];
                 deck.RemoveAt(i);
                 discardPile.Add(firstCard);
-
-                topDiscard = firstCard;
-                return;
+                SpawnFirstCard(firstCard);
+                break;
             }
+        }
+
+        DrawStartCards();
+    }
+
+    [Server]
+    private void DrawStartCards()
+    {
+        StartCoroutine(SpawnStartCards());
+    }
+
+    private IEnumerator SpawnStartCards()
+    {
+        Dictionary<uint, PlayerInfo> players = TurnManager.Instance.GetLocalPlayersInfo();
+
+        for (int i = 0; i < startCardCount; i++)
+        {
+            foreach (var item in players.Keys)
+            {
+                AddCardToPlayer(item);
+                yield return new WaitForSeconds(addCartDelay);
+            }
+        }
+
+        foreach (var item in players.Keys)
+        {
+            PlayerController player = NetworkClient.spawned[item].GetComponent<PlayerController>();
+            player.OnGameStart();
         }
     }
 
@@ -93,7 +119,6 @@ public class CardManager : NetworkBehaviour
             deck.Add(wild2);
         }
     }
-
 
     [Server]
     public void ShuffleDeck()
@@ -140,22 +165,6 @@ public class CardManager : NetworkBehaviour
         discardPile.Add(card);
     }
 
-    private void OnTopDiscardChanged(CardData oldData, CardData newData)
-    {
-        if (oldData.Color != CardColor.Invalid)
-        {
-            return;
-        }
-
-        StartCoroutine(SpawnFirstCard(newData, pilePoint));
-    }
-
-    public override void OnStartLocalPlayer()
-    {
-        RotateDeckToPlayer();
-        base.OnStartLocalPlayer();
-    }
-
     public void RotateDeckToPlayer()
     {
         Vector3 playerPos =
@@ -171,17 +180,59 @@ public class CardManager : NetworkBehaviour
         }
     }
 
-    private IEnumerator SpawnFirstCard(CardData data, Transform targetPoint)
+    public override void OnStartClient()
     {
-        yield return new WaitForSeconds(2);
-        SpawnCard(data, targetPoint);
+        base.OnStartClient();
+
+        StartCoroutine(WaitForLocalPlayer());
     }
 
-    private Card SpawnCard(CardData data, Transform targetPoint)
+    private IEnumerator WaitForLocalPlayer()
+    {
+        while (NetworkClient.localPlayer == null)
+        {
+            yield return null;
+        }
+
+        RotateDeckToPlayer();
+    }
+
+    [ClientRpc]
+    private void SpawnFirstCard(CardData data)
+    {
+        SpawnCard(data, pilePoint, null, true);
+    }
+
+    public void AddCardToPlayer(uint netId)
+    {
+        CardData data = DrawCard();
+
+        PlayerController player = NetworkClient.spawned[netId].GetComponent<PlayerController>();
+
+        player.AddCard(data);
+    }
+
+    public Card SpawnCard(CardData data, Transform targetPoint, uint? ownerPlayer, bool useJump)
     {
         Card card = Instantiate(cardPrefab, cardSpawnPoint.position, cardSpawnPoint.rotation);
-        card.Init(data);
-        card.MoveToPoint(targetPoint);
+        bool isVisible = ownerPlayer == null;
+        if (!isVisible)
+        {
+            isVisible = NetworkClient.localPlayer.netId == ownerPlayer;
+        }
+
+        card.Init(data, isVisible);
+        card.MoveToPoint(targetPoint, useJump);
         return card;
+    }
+
+    public bool CanUseCard(CardData data)
+    {
+        if (data.Color == CardColor.Black)
+        {
+            return currentCard.Value != CardValue.Get4;
+        }
+
+        return currentCard.Color == data.Color || currentCard.Value == data.Value;
     }
 }

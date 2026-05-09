@@ -69,12 +69,9 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  messages: {fileID: 11400000, guid: 4e2f3aa89ea71ca42a1cfb963899a99e, type: 2}
   cameraOrigin: {fileID: 9204218781610935268}
   handVisualizer: {fileID: 7862743527978275741}
-  handPoint: {fileID: 3225430039460450289}
-  handMaxAngle: 30
-  handCardSpacing: 0.1
-  handCurveOffset: 0.02
 --- !u!114 &7862743527978275741
 MonoBehaviour:
   m_ObjectHideFlags: 0

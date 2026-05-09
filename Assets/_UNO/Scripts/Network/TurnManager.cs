@@ -80,15 +80,23 @@ public class TurnManager : NetworkBehaviour
         if (turnOrder.Count == 0) return;
         isStarted = true;
         CardManager.Instance.OnStartGame();
+        StartGameRPC();
 
         currentTurnIndex = 0;
         NotifyTurnChanged();
     }
 
+    [ClientRpc]
+    private void StartGameRPC()
+    {
+        InputManager.InputActions.Player.Enable();
+    }
+
     [Server]
     public void NextTurn()
     {
-        if (turnOrder.Count == 0) return;
+        if (turnOrder.Count == 0)
+            return;
 
         currentTurnIndex += direction;
 
@@ -107,13 +115,16 @@ public class TurnManager : NetworkBehaviour
     }
 
     [Server]
-    public uint GetCurrentPlayer()
+    private uint GetCurrentPlayer()
     {
         if (!IsStarted)
         {
             return 0;
         }
-        if (turnOrder.Count == 0) return 0;
+        if (turnOrder.Count == 0) 
+        { 
+            return 0; 
+        }
         return turnOrder[currentTurnIndex];
     }
 
@@ -176,7 +187,8 @@ public class TurnManager : NetworkBehaviour
     {
         uint id = GetCurrentPlayer();
 
-        if (!players.ContainsKey(id)) return;
+        if (!players.ContainsKey(id)) 
+            return;
 
         RpcTurnChanged(id);
     }

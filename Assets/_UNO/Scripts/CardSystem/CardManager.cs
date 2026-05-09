@@ -6,6 +6,9 @@ using static CardData;
 
 public class CardManager : NetworkBehaviour
 {
+    public static CardManager Instance { get; private set; }
+    public Transform PilePoint => pilePoint;
+
     [SerializeField] private Card cardPrefab;
     [SerializeField] private Transform deckOrigin;
     [SerializeField] private Transform cardSpawnPoint;
@@ -14,11 +17,17 @@ public class CardManager : NetworkBehaviour
     [SerializeField] private int startCardCount = 7;
     [SerializeField] private float addCartDelay = 0.1f;
 
-    public static CardManager Instance {  get; private set; }
+    [Header("Visual")]
+    [SerializeField] private Transform deckOriginMovable;
+    [SerializeField] private float minDeckY;
+    [SerializeField] private float maxDeckY;
+    private const int DeckSize = 108;
+    private Card upperCard;
 
     private List<CardData> deck = new();
     private List<CardData> discardPile = new();
-    private CardData currentCard => discardPile[0];
+
+    [SyncVar] private CardData currentCard;
 
     private void Awake()
     {
@@ -46,12 +55,14 @@ public class CardManager : NetworkBehaviour
                 firstCard = deck[i];
                 deck.RemoveAt(i);
                 discardPile.Add(firstCard);
+                currentCard = firstCard;
                 SpawnFirstCard(firstCard);
                 break;
             }
         }
 
         DrawStartCards();
+        UpdateDeckHeight();
     }
 
     [Server]
@@ -155,15 +166,18 @@ public class CardManager : NetworkBehaviour
 
         CardData card = deck[0];
         deck.RemoveAt(0);
+        UpdateDeckHeight();
 
         return card;
     }
 
-    [Server]
-    public void AddToDiscard(CardData card)
+    [Command]
+    public void PlaceCard(CardData data)
     {
-        discardPile.Add(card);
+        discardPile.Insert(0, data);
+        currentCard = data;
     }
+
 
     public void RotateDeckToPlayer()
     {
@@ -200,7 +214,7 @@ public class CardManager : NetworkBehaviour
     [ClientRpc]
     private void SpawnFirstCard(CardData data)
     {
-        SpawnCard(data, pilePoint, null, true);
+        upperCard = SpawnCard(data, pilePoint, null, true);
     }
 
     public void AddCardToPlayer(uint netId)
@@ -234,5 +248,24 @@ public class CardManager : NetworkBehaviour
         }
 
         return currentCard.Color == data.Color || currentCard.Value == data.Value;
+    }
+
+    [ClientRpc]
+    private void UpdateDeckHeight()
+    {
+        Vector3 pos = deckOriginMovable.localPosition;
+        pos.y = Mathf.Lerp(minDeckY, maxDeckY, (float)deck.Count / DeckSize);
+        deckOriginMovable.localPosition = pos;
+    }
+
+    
+    public void SetUpperCard(Card card)
+    {
+        if (upperCard != null)
+        {
+            Destroy(upperCard.gameObject);
+        }
+        upperCard = card;
+        card.transform.position = pilePoint.position;
     }
 }

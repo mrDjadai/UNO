@@ -11,12 +11,34 @@ public class HandVisualizer : MonoBehaviour
     [SerializeField] private float handDepthOffset = 0.01f;
 
     private List<Card> cards = new List<Card>();
+    private bool hasFirstSelected;
+
+    public void ResetFirstSelect()
+    {
+        hasFirstSelected = false;
+    }
 
     public void MoveCardToHand(CardData data, uint netId)
     {
         Card card = CardManager.Instance.SpawnCard(data, handPoint, netId, false);
         cards.Add(card);
         RedrawHand();
+    }
+
+    public void PlaceCard(int id)
+    {
+        Card c = cards[id];
+
+        c.SetSelectedTexture(false);
+        c.IsVisible = true;
+
+        cards.RemoveAt(id);
+        RedrawHand();
+
+        c.MoveToPoint(CardManager.Instance.PilePoint.position + Vector3.up * 0.001f, 
+            CardManager.Instance.PilePoint.eulerAngles, false);
+
+        c.SetMoveAction(CardManager.Instance.SetUpperCard);
     }
 
     public void SortHand()
@@ -80,7 +102,11 @@ public class HandVisualizer : MonoBehaviour
 
     public void SelectCard(int oldSelected, int newSelected)
     {
-        cards[oldSelected].SetSelected(false);
+        if (hasFirstSelected)
+        {
+            cards[oldSelected].SetSelected(false);
+        }
         cards[newSelected].SetSelected(true);
+        hasFirstSelected = true;
     }
 }

@@ -65,6 +65,7 @@ public class StartPanel : NetworkBehaviour
     {
         group.transform.DOScale(Vector3.zero, hideDuration);
         TurnManager.Instance.StartGame();
+
         InputManager.Instance.SetCursorLocked(true);
     }
 }

@@ -23,5 +23,7 @@ public class InputManager
         }
         InputActions = new GameInput();
         InputActions.Enable();
+
+        InputActions.Player.Disable();
     }
 }

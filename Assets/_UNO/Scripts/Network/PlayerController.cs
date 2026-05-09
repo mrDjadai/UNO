@@ -5,9 +5,9 @@ using UnityEngine.InputSystem;
 
 public class PlayerController : NetworkBehaviour
 {
+    [SerializeField] private MessageValue messages;
     [SerializeField] private GameObject cameraOrigin;
     [SerializeField] private HandVisualizer handVisualizer;
-
     public readonly SyncList<CardData> Hand = new();
     [SyncVar] private bool drawCard;
     [SyncVar] private bool currentTurn;
@@ -22,6 +22,7 @@ public class PlayerController : NetworkBehaviour
         {
             InputManager.InputActions.Player.ScrollCards.performed += ScrollCards;
             InputManager.InputActions.Player.DrawCard.performed += TryDrawCard;
+            InputManager.InputActions.Player.UseCard.performed += TryPlaceCard;
 
             TurnManager.Instance.OnTurnChanged += StartTurn;
         }
@@ -69,6 +70,7 @@ public class PlayerController : NetworkBehaviour
         {
             InputManager.InputActions.Player.ScrollCards.performed -= ScrollCards;
             InputManager.InputActions.Player.DrawCard.performed -= TryDrawCard;
+            InputManager.InputActions.Player.UseCard.performed -= TryPlaceCard;
         }
     }
 
@@ -103,14 +105,60 @@ public class PlayerController : NetworkBehaviour
         SelectCard(newSelected);
     }
 
-    private void TryDrawCard(InputAction.CallbackContext context)
+    private void TryPlaceCard(InputAction.CallbackContext context)
     {
-        if (TurnManager.Instance.GetCurrentPlayer() != netId)
-            return;
-        if (drawCard && ServerDataContainer.Instance.TakeOnlyOneCard)
+        if (!currentTurn)
         {
+            MessageShower.Instance.Show(messages.Message["OtherTurn"]);
             return;
         }
+
+        if (CardManager.Instance.CanUseCard(Hand[selectedCard]) == false)
+        {
+            MessageShower.Instance.Show(messages.Message["IncorrectCard"]);
+            return;
+        }
+
+        CardManager.Instance.PlaceCard(Hand[selectedCard]);
+        Hand.RemoveAt(selectedCard);
+
+        handVisualizer.ResetFirstSelect();
+        PlaceCard(selectedCard);
+
+        if (selectedCard != 0)
+        {
+            SelectCard(selectedCard - 1);
+        }
+        else
+        {
+            SelectCard(0);
+        }
+
+
+        EndTurn();
+    }
+
+    private void TryDrawCard(InputAction.CallbackContext context)
+    {
+        if (!currentTurn)
+        {
+            MessageShower.Instance.Show(messages.Message["OtherTurn"]);
+            return;
+        }
+
+        if (drawCard && ServerDataContainer.Instance.TakeOnlyOneCard)
+        {
+            MessageShower.Instance.Show(messages.Message["CantDrawCard"]);
+            return;
+        }
+
+        if (CanUseAnyCard())
+        {
+            MessageShower.Instance.Show(messages.Message["CanUseAnyCard"]);
+            return;
+        }
+
+
         drawCard = true;
         CardManager.Instance.AddCardToPlayer(netId);
 
@@ -119,7 +167,6 @@ public class PlayerController : NetworkBehaviour
             EndTurn();
         }
     }
-
 
     public void SelectCard(int id)
     {
@@ -144,6 +191,7 @@ public class PlayerController : NetworkBehaviour
         if (!isLocalPlayer) 
             return;
 
+        currentTurn = false;
         CmdEndTurn();
     }
 
@@ -159,13 +207,18 @@ public class PlayerController : NetworkBehaviour
         handVisualizer.SortHand();
     }
 
+    [ClientRpc]
+    public void PlaceCard(int num)
+    {
+        handVisualizer.PlaceCard(num);
+    }
+
+
     public void StartTurn(uint id)
     {
         if (!isLocalPlayer) 
             return;
 
-        if (TurnManager.Instance.GetCurrentPlayer() != netId)
-            return;
         currentTurn = true;
         drawCard = false;
     }
@@ -173,10 +226,10 @@ public class PlayerController : NetworkBehaviour
     [Command]
     private void CmdEndTurn()
     {
-        if (TurnManager.Instance.GetCurrentPlayer() != netId)
+        if (!currentTurn)
             return;
 
-        currentTurn = false;
+
         TurnManager.Instance.NextTurn();
     }
 

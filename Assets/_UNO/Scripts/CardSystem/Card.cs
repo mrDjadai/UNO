@@ -1,5 +1,6 @@
 using UnityEngine;
 using DG.Tweening;
+using System;
 
 [RequireComponent(typeof(CardVisualisator))]
 public class Card : MonoBehaviour
@@ -32,6 +33,15 @@ public class Card : MonoBehaviour
     private Tween moveTween;
     private Tween rotationTween;
     private Transform tr;
+    private Action<Card> onMove;
+
+    public void SetMoveAction(Action<Card> a)
+    {
+        if (onMove == null)
+        {
+            onMove = a;
+        }
+    }    
 
     private void Awake()
     {
@@ -60,6 +70,7 @@ public class Card : MonoBehaviour
         {
             moveTween.Kill();
             rotationTween.Kill();
+            MovedAction();
         }
 
         float duration = Vector3.Distance(tr.position, point) / movingSpeed;
@@ -72,7 +83,7 @@ public class Card : MonoBehaviour
         {
             moveTween = tr.DOMove(point, duration);
         }
-        rotationTween = tr.DORotate(angles, duration);
+        rotationTween = tr.DORotate(angles, duration).OnComplete(MovedAction);
     }
 
     public void SetSelected(bool v)
@@ -80,5 +91,18 @@ public class Card : MonoBehaviour
         cardVisualisator.SetSelected(v);
         MoveToPoint(currentTarget + tr.forward * (v? selectOffset : -selectOffset), currentTargetAngles, false);
         MoveToPoint(currentTarget + tr.up * (v? selectVerticalOffset: -selectVerticalOffset), currentTargetAngles, false);
+    }
+
+    public void SetSelectedTexture(bool v)
+    {
+        cardVisualisator.SetSelected(v);
+    }
+
+    private void MovedAction()
+    {
+        if (onMove != null)
+        {
+            onMove.Invoke(this);
+        }
     }
 }

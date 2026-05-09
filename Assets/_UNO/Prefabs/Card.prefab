@@ -322,7 +322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 280ccc45c0ff81d4cb611045109dbe24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Card
-  movingSpeed: 0.6
+  movingSpeed: 1
   jumpPower: 0.1
   selectOffset: -0.002
   selectVerticalOffset: 0.05

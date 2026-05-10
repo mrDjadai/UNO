@@ -50,7 +50,7 @@ public class CardManager : NetworkBehaviour
 
         for (int i = 0; i < deck.Count; i++)
         {
-            if (deck[i].Color != CardColor.Black)
+            if (deck[i].Color != CardColor.Black && deck[i].Value <= CardValue.V9)
             {
                 firstCard = deck[i];
                 deck.RemoveAt(i);
@@ -171,7 +171,7 @@ public class CardManager : NetworkBehaviour
         return card;
     }
 
-    [Command]
+    [Server]
     public void PlaceCard(CardData data)
     {
         discardPile.Insert(0, data);
@@ -217,11 +217,12 @@ public class CardManager : NetworkBehaviour
         upperCard = SpawnCard(data, pilePoint, null, true);
     }
 
+    [Server]
     public void AddCardToPlayer(uint netId)
     {
         CardData data = DrawCard();
 
-        PlayerController player = NetworkClient.spawned[netId].GetComponent<PlayerController>();
+        PlayerController player = NetworkServer.spawned[netId].GetComponent<PlayerController>();
 
         player.AddCard(data);
     }

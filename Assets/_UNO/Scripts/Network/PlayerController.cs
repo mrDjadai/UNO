@@ -9,8 +9,8 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private GameObject cameraOrigin;
     [SerializeField] private HandVisualizer handVisualizer;
     public readonly SyncList<CardData> Hand = new();
-    [SyncVar] private bool drawCard;
-    [SyncVar] private bool currentTurn;
+    private bool drawCard;
+    private bool currentTurn;
 
     public uint PlayerId => netId;
     private int selectedCard = 0;
@@ -18,6 +18,11 @@ public class PlayerController : NetworkBehaviour
     private void Start()
     {
         cameraOrigin.SetActive(isLocalPlayer);
+        if (!isLocalPlayer)
+        {
+            Destroy(cameraOrigin.transform.GetChild(0).GetComponent<AudioListener>());
+        }
+
         if (isLocalPlayer)
         {
             InputManager.InputActions.Player.ScrollCards.performed += ScrollCards;
@@ -119,11 +124,8 @@ public class PlayerController : NetworkBehaviour
             return;
         }
 
-        CardManager.Instance.PlaceCard(Hand[selectedCard]);
-        Hand.RemoveAt(selectedCard);
-
         handVisualizer.ResetFirstSelect();
-        PlaceCard(selectedCard);
+        OnPlaceCardCmd(selectedCard);
 
         if (selectedCard != 0)
         {
@@ -136,6 +138,14 @@ public class PlayerController : NetworkBehaviour
 
 
         EndTurn();
+    }
+
+    [Command]
+    private void OnPlaceCardCmd(int pos)
+    {
+        CardManager.Instance.PlaceCard(Hand[pos]);
+        PlaceCard(pos);
+        Hand.RemoveAt(pos);
     }
 
     private void TryDrawCard(InputAction.CallbackContext context)
@@ -159,12 +169,23 @@ public class PlayerController : NetworkBehaviour
         }
 
 
+        OnDrawCardCmd();
+    }
+
+    [Command]
+    private void OnDrawCardCmd()
+    {
         drawCard = true;
+
         CardManager.Instance.AddCardToPlayer(netId);
 
-        if (ServerDataContainer.Instance.TakeOnlyOneCard && !CanUseAnyCard())
+        if (ServerDataContainer.Instance.TakeOnlyOneCard)
         {
-            EndTurn();
+            if (!CanUseAnyCard())
+            {
+                currentTurn = false;
+                TurnManager.Instance.NextTurn();
+            }
         }
     }
 
@@ -177,6 +198,10 @@ public class PlayerController : NetworkBehaviour
     [ClientRpc]
     public void OnGameStart()
     {
+        if (isLocalPlayer == false)
+        {
+            return;
+        }
         SelectCard(0);
     }
 
@@ -216,20 +241,20 @@ public class PlayerController : NetworkBehaviour
 
     public void StartTurn(uint id)
     {
-        if (!isLocalPlayer) 
+        if (!isLocalPlayer)
             return;
 
-        currentTurn = true;
-        drawCard = false;
+        currentTurn = (id == netId);
+
+        if (currentTurn)
+        {
+            drawCard = false;
+        }
     }
 
     [Command]
     private void CmdEndTurn()
     {
-        if (!currentTurn)
-            return;
-
-
         TurnManager.Instance.NextTurn();
     }
 

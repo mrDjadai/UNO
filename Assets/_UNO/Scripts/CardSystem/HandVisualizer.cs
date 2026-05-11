@@ -6,10 +6,12 @@ public class HandVisualizer : MonoBehaviour
     [Header("Hand Drawing")]
     [SerializeField] private Transform handPoint;
     [SerializeField] private float handMaxAngle = 30f;
-    [SerializeField] private float handCardSpacing = 0.35f;
+    [SerializeField] private float maxHandCardSpacing = 0.35f;
+    [SerializeField] private AnimationCurve cardsToSpacing;
     [SerializeField] private float handCurveOffset = 0.05f;
     [SerializeField] private float handDepthOffset = 0.01f;
 
+    private float handCardSpacing => maxHandCardSpacing * cardsToSpacing.Evaluate(cards.Count);
     private List<Card> cards = new List<Card>();
     private bool hasFirstSelected;
 

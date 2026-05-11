@@ -175,6 +175,17 @@
                     "action": "UseCard",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "aefc6671-e497-4ae8-89bb-5c2b5e35273a",
+                    "path": "<Keyboard>/enter",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "UseCard",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         }

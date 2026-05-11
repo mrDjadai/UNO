@@ -14,6 +14,7 @@ public class StartPanel : NetworkBehaviour
     [SerializeField] private string noPlayersTxt;
     [SerializeField] private string canStartTxt;
     [SerializeField] private float hideDuration = 0.5f;
+    [SerializeField] private Transform listPanel;
 
     private void Awake()
     {
@@ -64,8 +65,16 @@ public class StartPanel : NetworkBehaviour
     private void OnButtonClick()
     {
         group.transform.DOScale(Vector3.zero, hideDuration);
+        HidePlayerListRPC();
+
         TurnManager.Instance.StartGame();
 
         InputManager.Instance.SetCursorLocked(true);
+    }
+
+    [ClientRpc]
+    private void HidePlayerListRPC()
+    {
+        listPanel.DOScale(Vector3.zero, hideDuration);
     }
 }

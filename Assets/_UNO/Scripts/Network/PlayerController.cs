@@ -1,19 +1,31 @@
 ﻿using Mirror;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 public class PlayerController : NetworkBehaviour
 {
+    public static PlayerController LocalPlayer { get; private set; }
+
     [SerializeField] private MessageValue messages;
     [SerializeField] private GameObject cameraOrigin;
     [SerializeField] private HandVisualizer handVisualizer;
+
+    [SerializeField] private Transform nickOrigin;
+ //   [SerializeField] private Transform turnIndicator;
+//    [SerializeField] private float startTurnAnimationTime = 0.5f;
+
+    [SerializeField] private TMP_Text nickText;
+
     public readonly SyncList<CardData> Hand = new();
     private bool drawCard;
     private bool currentTurn;
 
     public uint PlayerId => netId;
     private int selectedCard = 0;
+    private string nickName;
 
     private void Start()
     {
@@ -25,20 +37,27 @@ public class PlayerController : NetworkBehaviour
 
         if (isLocalPlayer)
         {
+            LocalPlayer = this;
+            InputManager.InputActions.Player.ScrollCards.Disable();
+
             InputManager.InputActions.Player.ScrollCards.performed += ScrollCards;
             InputManager.InputActions.Player.DrawCard.performed += TryDrawCard;
             InputManager.InputActions.Player.UseCard.performed += TryPlaceCard;
-
-            TurnManager.Instance.OnTurnChanged += StartTurn;
         }
+        TurnManager.Instance.OnTurnChanged += StartTurn;
     }
-    
+
     public void AddCard(CardData data)
     {
         Hand.Add(data);
         MoveCardToHand(data);
         SortHand();
         RedrawHand();
+    }
+
+    public void EnableScrolling()
+    {
+        InputManager.InputActions.Player.ScrollCards.Enable();
     }
 
     private void SortHand()
@@ -68,6 +87,13 @@ public class PlayerController : NetworkBehaviour
         base.OnStartServer();
         TurnManager.Instance.RegisterPlayer(this);
     }
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        StartCoroutine(InitNickname());
+    }
+
 
     private void OnDestroy()
     {
@@ -127,6 +153,11 @@ public class PlayerController : NetworkBehaviour
         handVisualizer.ResetFirstSelect();
         OnPlaceCardCmd(selectedCard);
 
+        if (Hand[selectedCard].Color == CardData.CardColor.Black)
+        {
+            ColorPicker.Instance.Open();
+        }
+
         if (selectedCard != 0)
         {
             SelectCard(selectedCard - 1);
@@ -136,8 +167,7 @@ public class PlayerController : NetworkBehaviour
             SelectCard(0);
         }
 
-
-        EndTurn();
+        currentTurn = false;
     }
 
     [Command]
@@ -162,19 +192,59 @@ public class PlayerController : NetworkBehaviour
             return;
         }
 
-        if (CanUseAnyCard())
+
+        bool isSkipped = !CardManager.Instance.TurnSkipped 
+            && CardManager.Instance.CurrentCard.Value == CardData.CardValue.Stop;
+
+        if (isSkipped)
         {
-            MessageShower.Instance.Show(messages.Message["CanUseAnyCard"]);
-            return;
+            MessageShower.Instance.Show(messages.Message["SkipTurn"]);
+            OnTurnSkip();
+        }
+        else
+        {
+            if (CardManager.Instance.GetCardCount > 0)
+            {
+                OnDrawCardsCmd();
+                return;
+            }
+            if (CanUseAnyCard())
+            {
+                MessageShower.Instance.Show(messages.Message["CanUseAnyCard"]);
+                return;
+            }
         }
 
-
-        OnDrawCardCmd();
+        OnDrawCardCmd(isSkipped);
     }
 
     [Command]
-    private void OnDrawCardCmd()
+    private void OnTurnSkip()
     {
+        CardManager.Instance.OnTurnSkip();
+    }
+
+    [Command]
+    private void OnDrawCardsCmd()
+    {
+        for (int i = 0; i < CardManager.Instance.GetCardCount; i++)
+        {
+            CardManager.Instance.AddCardToPlayer(netId);
+        }
+        CardManager.Instance.ResetGettingCards();
+        TurnManager.Instance.NextTurn();
+    }
+
+    [Command]
+    private void OnDrawCardCmd(bool isSkipped)
+    {
+        if (isSkipped)
+        {
+            currentTurn = false;
+            TurnManager.Instance.NextTurn();
+            return;
+        }
+
         drawCard = true;
 
         CardManager.Instance.AddCardToPlayer(netId);
@@ -202,6 +272,7 @@ public class PlayerController : NetworkBehaviour
         {
             return;
         }
+        EnableScrolling();
         SelectCard(0);
     }
 
@@ -209,15 +280,6 @@ public class PlayerController : NetworkBehaviour
     {
         if (TurnManager.Instance != null)
             TurnManager.Instance.UnregisterPlayer(this);
-    }
-
-    public void EndTurn()
-    {
-        if (!isLocalPlayer) 
-            return;
-
-        currentTurn = false;
-        CmdEndTurn();
     }
 
     [ClientRpc]
@@ -241,22 +303,19 @@ public class PlayerController : NetworkBehaviour
 
     public void StartTurn(uint id)
     {
-        if (!isLocalPlayer)
-            return;
-
         currentTurn = (id == netId);
-
         if (currentTurn)
         {
+       //     turnIndicator.DOScale(Vector3.one, startTurnAnimationTime);
+
             drawCard = false;
         }
+    /*    else
+        {
+            turnIndicator.DOScale(Vector3.zero, startTurnAnimationTime);
+        }*/
     }
 
-    [Command]
-    private void CmdEndTurn()
-    {
-        TurnManager.Instance.NextTurn();
-    }
 
     private bool CanUseAnyCard()
     {
@@ -268,5 +327,45 @@ public class PlayerController : NetworkBehaviour
             }
         }
         return false;
+    }
+
+    private IEnumerator InitNickname()
+    {
+        if (isLocalPlayer)
+        {
+            nickOrigin.gameObject.SetActive(false);
+        }
+        else
+        {
+            nickOrigin.gameObject.SetActive(true);
+
+
+            nickName = GetPlayerName();
+
+            nickText.text = nickName;
+
+            yield return new WaitWhile(() => { return NetworkClient.localPlayer == null; }); 
+            Vector3 playerPos =
+                TurnManager.Instance.GetPlayerPosition(NetworkClient.localPlayer.netId);
+
+            nickOrigin.LookAtVertical(playerPos);
+        }
+    }
+
+    public void ChooseColor(CardData.CardColor color)
+    {
+        CmdChooseColor(color);
+    }
+
+    [Command]
+    private void CmdChooseColor(CardData.CardColor color)
+    {
+        CardManager.Instance.overridedColor = color;
+        TurnManager.Instance.NextTurn();
+    }
+
+    public string GetPlayerName()
+    {
+        return "Player_" + netId.ToString();
     }
 }

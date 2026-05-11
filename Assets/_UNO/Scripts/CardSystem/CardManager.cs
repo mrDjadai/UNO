@@ -8,6 +8,9 @@ public class CardManager : NetworkBehaviour
 {
     public static CardManager Instance { get; private set; }
     public Transform PilePoint => pilePoint;
+    public CardData CurrentCard => currentCard;
+    public bool TurnSkipped => turnSkipped;
+    public int GetCardCount => getCardCount;
 
     [SerializeField] private Card cardPrefab;
     [SerializeField] private Transform deckOrigin;
@@ -18,6 +21,7 @@ public class CardManager : NetworkBehaviour
     [SerializeField] private float addCartDelay = 0.1f;
 
     [Header("Visual")]
+    [SerializeField] private ColorIndicator colorIndicator;
     [SerializeField] private Transform deckOriginMovable;
     [SerializeField] private float minDeckY;
     [SerializeField] private float maxDeckY;
@@ -27,7 +31,17 @@ public class CardManager : NetworkBehaviour
     private List<CardData> deck = new();
     private List<CardData> discardPile = new();
 
+    [SyncVar(hook = nameof(UpdateDeckHeight))] private int deckLenght;
     [SyncVar] private CardData currentCard;
+    [SyncVar] private bool turnSkipped;
+    [SyncVar] private int getCardCount;
+    [SyncVar(hook = nameof(UpdateColor))] public CardColor overridedColor = CardColor.Invalid;
+
+    [Server]
+    public void ResetGettingCards()
+    {
+        getCardCount = 0;
+    }
 
     private void Awake()
     {
@@ -39,6 +53,12 @@ public class CardManager : NetworkBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    [Server]
+    public void OnTurnSkip()
+    {
+        turnSkipped = true;
     }
 
     public void OnStartGame()
@@ -60,9 +80,9 @@ public class CardManager : NetworkBehaviour
                 break;
             }
         }
+        deckLenght = deck.Count;
 
         DrawStartCards();
-        UpdateDeckHeight();
     }
 
     [Server]
@@ -129,6 +149,7 @@ public class CardManager : NetworkBehaviour
             deck.Add(wild1);
             deck.Add(wild2);
         }
+        deckLenght = deck.Count;
     }
 
     [Server]
@@ -146,7 +167,7 @@ public class CardManager : NetworkBehaviour
     {
         deck.AddRange(discardPile);
         discardPile.Clear();
-
+        deckLenght = deck.Count;
         ShuffleDeck();
     }
 
@@ -166,7 +187,7 @@ public class CardManager : NetworkBehaviour
 
         CardData card = deck[0];
         deck.RemoveAt(0);
-        UpdateDeckHeight();
+        deckLenght = deck.Count;
 
         return card;
     }
@@ -176,6 +197,42 @@ public class CardManager : NetworkBehaviour
     {
         discardPile.Insert(0, data);
         currentCard = data;
+
+        switch (data.Value)
+        {
+            case CardValue.Stop:
+                turnSkipped = false;
+                break;
+            case CardValue.Reverse:
+                TurnManager.Instance.ReverseDirection();
+                break;
+            case CardValue.Get2:
+                if (ServerDataContainer.Instance.SummarizeGetCards)
+                {
+                    getCardCount += 2;
+                }
+                else
+                {
+                    getCardCount = 2;
+                }
+                break;
+            case CardValue.Get4:
+                getCardCount = 4;
+                break;
+            case CardValue.Colorize:
+                break;
+            default:
+                break;
+        }
+
+        if (data.Color != CardColor.Black)
+        {
+            if (overridedColor != CardColor.Invalid)
+            {
+                overridedColor = CardColor.Invalid;
+            }
+            TurnManager.Instance.NextTurn();
+        }
     }
 
 
@@ -184,14 +241,7 @@ public class CardManager : NetworkBehaviour
         Vector3 playerPos =
             TurnManager.Instance.GetPlayerPosition(NetworkClient.localPlayer.netId);
 
-        Vector3 direction = playerPos - deckOrigin.position;
-
-        direction.y = 0f;
-
-        if (direction != Vector3.zero)
-        {
-            deckOrigin.forward = direction.normalized;
-        }
+        deckOrigin.LookAtVertical(playerPos);
     }
 
     public override void OnStartClient()
@@ -248,18 +298,40 @@ public class CardManager : NetworkBehaviour
             return currentCard.Value != CardValue.Get4;
         }
 
+        if (overridedColor != CardColor.Invalid)
+        {
+            if (getCardCount > 0)
+            {
+                return data.Value == CardValue.Get2 && data.Color == overridedColor;
+            }
+            return data.Color == overridedColor;
+        }
+
+        if (currentCard.Value == CardValue.Stop && !turnSkipped)
+        {
+            return data.Value == CardValue.Stop;
+        }
+
+        if (getCardCount > 0)
+        {
+            return data.Value == CardValue.Get2;
+        }
+
         return currentCard.Color == data.Color || currentCard.Value == data.Value;
     }
 
-    [ClientRpc]
-    private void UpdateDeckHeight()
+    private void UpdateDeckHeight(int oldValue, int newValue)
     {
         Vector3 pos = deckOriginMovable.localPosition;
-        pos.y = Mathf.Lerp(minDeckY, maxDeckY, (float)deck.Count / DeckSize);
+        pos.y = Mathf.Lerp(minDeckY, maxDeckY, (float)deckLenght / DeckSize);
         deckOriginMovable.localPosition = pos;
     }
 
-    
+    private void UpdateColor(CardColor oldValue, CardColor newValue)
+    {
+        colorIndicator.Indicate(newValue);
+    }
+
     public void SetUpperCard(Card card)
     {
         if (upperCard != null)

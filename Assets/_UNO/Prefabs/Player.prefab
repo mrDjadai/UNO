@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3318760416575228571}
   - component: {fileID: 6800025397030151956}
   - component: {fileID: 7862743527978275741}
+  - component: {fileID: 8634552013269739734}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -74,8 +75,6 @@ MonoBehaviour:
   cameraOrigin: {fileID: 9204218781610935268}
   handVisualizer: {fileID: 7862743527978275741}
   nickOrigin: {fileID: 828424465227419851}
-  turnIndicator: {fileID: 0}
-  startTurnAnimationTime: 0.5
   nickText: {fileID: 7346612305020265623}
 --- !u!114 &7862743527978275741
 MonoBehaviour:
@@ -136,6 +135,40 @@ MonoBehaviour:
     m_RotationOrder: 4
   handCurveOffset: 0.02
   handDepthOffset: 0.001
+--- !u!114 &8634552013269739734
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1834562367650011145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkTransformReliable
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  target: {fileID: 3004878357610964794}
+  syncPosition: 1
+  syncRotation: 1
+  syncScale: 0
+  onlySyncOnChange: 1
+  compressRotation: 1
+  interpolatePosition: 0
+  interpolateRotation: 0
+  interpolateScale: 0
+  coordinateSpace: 1
+  timelineOffset: 1
+  showGizmos: 0
+  showOverlay: 0
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
+  onlySyncOnChangeCorrectionMultiplier: 2
+  useFixedUpdate: 0
+  rotationSensitivity: 0.01
+  positionPrecision: 0.01
+  scalePrecision: 0.01
 --- !u!1 &2359948033298640292
 GameObject:
   m_ObjectHideFlags: 0

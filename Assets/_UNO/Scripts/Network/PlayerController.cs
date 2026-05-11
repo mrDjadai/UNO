@@ -107,6 +107,10 @@ public class PlayerController : NetworkBehaviour
 
     private void ScrollCards(InputAction.CallbackContext context)
     {
+        if (!TurnManager.Instance.IsStarted)
+        {
+            return;
+        }
         if (Hand.Count == 0)
         {
             return;
@@ -138,6 +142,10 @@ public class PlayerController : NetworkBehaviour
 
     private void TryPlaceCard(InputAction.CallbackContext context)
     {
+        if (!TurnManager.Instance.IsStarted)
+        {
+            return;
+        }
         if (!currentTurn)
         {
             MessageShower.Instance.Show(messages.Message["OtherTurn"]);

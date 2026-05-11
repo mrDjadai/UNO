@@ -19,7 +19,7 @@ public class TurnManager : NetworkBehaviour
     private readonly List<uint> turnOrder = new();
 
     [SyncVar] private int currentTurnIndex = 0;
-    [SyncVar(hook = nameof(NotifyChangeDirection))] private int direction = 1; // 1 = вперед, -1 = назад
+    [SyncVar(hook = nameof(NotifyChangeDirection))] private int direction = -1;
 
     [SerializeField] private GameObject[] activatables;
     [SerializeField] private Transform playerIndicator;

@@ -12,6 +12,7 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private MessageValue messages;
     [SerializeField] private GameObject cameraOrigin;
     [SerializeField] private HandVisualizer handVisualizer;
+    [SerializeField] private Skin[] skins;
 
     [SerializeField] private Transform nickOrigin;
  //   [SerializeField] private Transform turnIndicator;
@@ -92,6 +93,7 @@ public class PlayerController : NetworkBehaviour
     {
         base.OnStartClient();
         StartCoroutine(InitNickname());
+        CmdSendPlayerData(PlayerPrefs.GetString("Nickname"), PlayerPrefs.GetInt("Skin"));
     }
 
 
@@ -347,11 +349,6 @@ public class PlayerController : NetworkBehaviour
         {
             nickOrigin.gameObject.SetActive(true);
 
-
-            nickName = GetPlayerName();
-
-            nickText.text = nickName;
-
             yield return new WaitWhile(() => { return NetworkClient.localPlayer == null; }); 
             Vector3 playerPos =
                 TurnManager.Instance.GetPlayerPosition(NetworkClient.localPlayer.netId);
@@ -372,8 +369,33 @@ public class PlayerController : NetworkBehaviour
         TurnManager.Instance.NextTurn();
     }
 
-    public string GetPlayerName()
+    [Command]
+    private void CmdSendPlayerData(string name, int skinID)
     {
-        return "Player_" + netId.ToString();
+        TurnManager.Instance.SetPlayerData(netId, name, skinID);
+    }
+
+    public void SetPlayerVisual(string name, int skinID)
+    {
+        nickText.text = name;
+        foreach (var item in skins)
+        {
+            item.SetActive(false);
+        }
+        skins[skinID].SetActive(true);
+    }
+}
+
+[System.Serializable]
+public struct Skin
+{
+    [SerializeField] private GameObject[] parts;
+
+    public void SetActive(bool active)
+    {
+        foreach (var item in parts)
+        {
+            item.SetActive(active);
+        }
     }
 }

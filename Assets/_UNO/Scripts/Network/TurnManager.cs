@@ -47,7 +47,6 @@ public class TurnManager : NetworkBehaviour
         PlayerInfo info = new PlayerInfo
         {
             netId = netId,
-            playerName = player.GetPlayerName(),
             playerIndex = turnOrder.Count
         };
 
@@ -170,6 +169,10 @@ public class TurnManager : NetworkBehaviour
         foreach (var p in playersList)
         {
             players[p.netId] = p;
+
+            if (!NetworkClient.spawned.TryGetValue(p.netId, out var identity))
+                continue;
+            identity.GetComponent<PlayerController>().SetPlayerVisual(p.playerName, p.skinID);
         }
 
         OnPlayersListUpdated?.Invoke(players);
@@ -235,5 +238,13 @@ public class TurnManager : NetworkBehaviour
     private void NotifyChangeDirection(int oldValue, int newValue)
     {
         OnDirectionChange?.Invoke(newValue > 0);
+    }
+
+    [Server]
+    public void SetPlayerData(uint id, string nick, int skin)
+    {
+        players[id].playerName = nick;
+        players[id].skinID = skin;
+        UpdateClients();
     }
 }

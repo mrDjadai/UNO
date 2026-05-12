@@ -5,6 +5,8 @@ public class CameraRotator : MonoBehaviour
 {
     [SerializeField] private Transform origin;
     [SerializeField] private Transform cam;
+    [SerializeField] private Transform head;
+
     [SerializeField] private float sensability = 1f;
     [SerializeField] private float maxVerticalAngle = 80f;
     [SerializeField] private float minVerticalAngle = -80f; 
@@ -26,5 +28,7 @@ public class CameraRotator : MonoBehaviour
         currentVerticalAngle -= mouseDelta.y * sensability;
         currentVerticalAngle = Mathf.Clamp(currentVerticalAngle, minVerticalAngle, maxVerticalAngle);
         cam.localRotation = Quaternion.Euler(currentVerticalAngle, 0f, 0f);
+
+        head.LookAt(cam.position + cam.forward);
     }
 }

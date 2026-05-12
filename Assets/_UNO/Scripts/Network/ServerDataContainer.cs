@@ -13,10 +13,10 @@ public class ServerDataContainer : NetworkBehaviour
 
     public bool OnlyOneWinner => onlyOneWinner;
 
-    [SerializeField] private bool alwaysAllowWildCards;
-    [SerializeField] private bool summarizeGetCards;
-    [SerializeField] private bool takeOnlyOneCard;
-    [SerializeField] private bool onlyOneWinner;
+    private bool alwaysAllowWildCards;
+    private bool summarizeGetCards;
+    private bool takeOnlyOneCard;
+    private bool onlyOneWinner;
 
     private void Awake()
     {
@@ -24,5 +24,10 @@ public class ServerDataContainer : NetworkBehaviour
         {
             Instance = this;
         }
+
+        alwaysAllowWildCards = PlayerPrefs.GetInt(nameof(alwaysAllowWildCards)) == 1;
+        summarizeGetCards = PlayerPrefs.GetInt(nameof(summarizeGetCards)) == 1;
+        takeOnlyOneCard = PlayerPrefs.GetInt(nameof(takeOnlyOneCard)) == 1;
+        onlyOneWinner = PlayerPrefs.GetInt(nameof(onlyOneWinner)) == 1;
     }
 }

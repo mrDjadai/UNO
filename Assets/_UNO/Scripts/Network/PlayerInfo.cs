@@ -7,4 +7,5 @@ public class PlayerInfo
     public string playerName;
     public int playerIndex;
     public float tableAngle;
+    public int skinID;
 }

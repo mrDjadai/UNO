@@ -106,3 +106,4 @@ InitTestScene*.unity*
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 /Assets/_UNO/Scenes/Game
+/Assets/_UNO/Scenes/MainMenu

@@ -15,8 +15,6 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private Skin[] skins;
 
     [SerializeField] private Transform nickOrigin;
- //   [SerializeField] private Transform turnIndicator;
-//    [SerializeField] private float startTurnAnimationTime = 0.5f;
 
     [SerializeField] private TMP_Text nickText;
 
@@ -320,14 +318,19 @@ public class PlayerController : NetworkBehaviour
         currentTurn = (id == netId);
         if (currentTurn)
         {
-       //     turnIndicator.DOScale(Vector3.one, startTurnAnimationTime);
-
+            if (isLocalPlayer)
+            {
+                TurnRemainder.Instance.OnTurnStart();
+            }
             drawCard = false;
         }
-    /*    else
+        else
         {
-            turnIndicator.DOScale(Vector3.zero, startTurnAnimationTime);
-        }*/
+            if (isLocalPlayer)
+            {
+                TurnRemainder.Instance.OnTurnEnd();
+            }
+        }
     }
 
 

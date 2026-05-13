@@ -7,10 +7,10 @@ using DG.Tweening;
 public class TurnManager : NetworkBehaviour
 {
     public static TurnManager Instance { get; private set; }
-    public bool IsStarted => isStarted;
+    public bool IsStarted => currentState == GameState.Started;
     public bool Direction => direction > 0;
 
-    [SyncVar] private bool isStarted;
+    [SyncVar] private GameState currentState = GameState.WaitForStart;
     public event Action<Dictionary<uint, PlayerInfo>> OnPlayersListUpdated;
     public event Action<uint> OnTurnChanged;
     public event Action<bool> OnDirectionChange;
@@ -82,7 +82,7 @@ public class TurnManager : NetworkBehaviour
     public void StartGame()
     {
         if (turnOrder.Count == 0) return;
-        isStarted = true;
+        currentState = GameState.Started;
         CardManager.Instance.OnStartGame();
         StartGameRPC();
 
@@ -247,4 +247,11 @@ public class TurnManager : NetworkBehaviour
         players[id].skinID = skin;
         UpdateClients();
     }
+}
+
+public enum GameState
+{
+    WaitForStart,
+    Started,
+    Finished
 }

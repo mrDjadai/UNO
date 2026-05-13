@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class InputManager
+public class InputManager : MonoBehaviour
 {
     public static InputManager Instance { get; private set; }
     public static GameInput InputActions { get; private set; }
@@ -11,7 +11,7 @@ public class InputManager
         Cursor.visible = !isLokced;
     }
 
-    public InputManager()
+    private void Awake()
     {
         if (Instance == null)
         {

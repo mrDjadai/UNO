@@ -40,6 +40,7 @@ public class StartPanel : NetworkBehaviour
         group.blocksRaycasts = true;
         startButton.onClick.AddListener(OnButtonClick);
         InputManager.Instance.SetCursorLocked(false);
+        InputManager.InputActions.Disable();
 
     }
 
@@ -67,6 +68,7 @@ public class StartPanel : NetworkBehaviour
 
         TurnManager.Instance.StartGame();
 
+        InputManager.InputActions.Enable();
         InputManager.Instance.SetCursorLocked(true);
     }
 }

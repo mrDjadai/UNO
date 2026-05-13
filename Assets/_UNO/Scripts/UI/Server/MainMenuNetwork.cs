@@ -102,6 +102,8 @@ public class MainMenuNetwork : MonoBehaviour
 
         networkManager.StartHost();
 
+        PlayerPrefs.SetInt("ServerPort", defaultPort);
+
 //        networkManager.ServerChangeScene(gameScene);
     }
 

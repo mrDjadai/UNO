@@ -93,7 +93,11 @@ public class PlayerController : NetworkBehaviour
     {
         base.OnStartClient();
         StartCoroutine(InitNickname());
-        CmdSendPlayerData(PlayerPrefs.GetString("Nickname"), PlayerPrefs.GetInt("Skin"));
+
+        if (isLocalPlayer)
+        {
+            CmdSendPlayerData(PlayerPrefs.GetString("Nickname"), PlayerPrefs.GetInt("Skin"));
+        }
     }
 
 

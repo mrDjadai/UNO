@@ -13,10 +13,10 @@ public class ServerDataContainer : NetworkBehaviour
 
     public bool OnlyOneWinner => onlyOneWinner;
 
-    private bool alwaysAllowWildCards;
-    private bool summarizeGetCards;
-    private bool takeOnlyOneCard;
-    private bool onlyOneWinner;
+    [SyncVar] private bool alwaysAllowWildCards;
+    [SyncVar] private bool summarizeGetCards;
+    [SyncVar] private bool takeOnlyOneCard;
+    [SyncVar] private bool onlyOneWinner;
 
     private void Awake()
     {
@@ -24,7 +24,11 @@ public class ServerDataContainer : NetworkBehaviour
         {
             Instance = this;
         }
+    }
 
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
         alwaysAllowWildCards = PlayerPrefs.GetInt(nameof(alwaysAllowWildCards)) == 1;
         summarizeGetCards = PlayerPrefs.GetInt(nameof(summarizeGetCards)) == 1;
         takeOnlyOneCard = PlayerPrefs.GetInt(nameof(takeOnlyOneCard)) == 1;

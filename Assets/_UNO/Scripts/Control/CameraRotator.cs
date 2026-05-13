@@ -19,7 +19,8 @@ public class CameraRotator : MonoBehaviour
 
     private void Update()
     {
-        mouseDelta = InputManager.InputActions.Player.Rotate.ReadValue<Vector2>();
+        mouseDelta = InputManager.InputActions.Player.Rotate.ReadValue<Vector2>() *
+            PlayerPrefs.GetFloat("Sensability");
         
         currentHorizontalAngle += mouseDelta.x * sensability;
         currentHorizontalAngle = Mathf.Clamp(currentHorizontalAngle, minHorizontalAngle, maxHorizontalAngle);

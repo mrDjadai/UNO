@@ -17,6 +17,7 @@ public class TurnManager : NetworkBehaviour
 
     private readonly Dictionary<uint, PlayerInfo> players = new();
     private readonly List<uint> turnOrder = new();
+    private List<uint> completedPlayers = new List<uint>();
 
     [SyncVar] private int currentTurnIndex = 0;
     [SyncVar(hook = nameof(NotifyChangeDirection))] private int direction = -1;
@@ -27,6 +28,7 @@ public class TurnManager : NetworkBehaviour
     [Header("Table Settings")]
     [SerializeField] private Transform centerPoint;
     [SerializeField] private float radius = 5f;
+    [SerializeField] private WinManager winManager;
 
     private void Awake()
     {
@@ -246,6 +248,67 @@ public class TurnManager : NetworkBehaviour
         players[id].playerName = nick;
         players[id].skinID = skin;
         UpdateClients();
+    }
+
+    public void Exit()
+    {
+        if (NetworkServer.active && NetworkClient.active)
+        {
+            NetworkClient.Disconnect();
+            NetworkServer.Shutdown();
+        }
+        else if (NetworkServer.active)
+        {
+            NetworkServer.Shutdown();
+        }
+        else if (NetworkClient.active)
+        {
+            NetworkClient.Disconnect();
+        }
+    }
+
+    [Server]
+    public void OnPlayerHandEmpty(uint netId)
+    {
+        if (ServerDataContainer.Instance.OnlyOneWinner)
+        {
+            EndGame();
+        }
+        else
+        {
+            completedPlayers.Add(netId);
+            turnOrder.Remove(netId);
+
+            if (completedPlayers.Count == 3)
+            {
+                EndGame();
+            }
+            else if (turnOrder.Count == 1)
+            {
+                foreach (var item in players.Keys)
+                {
+                    if (completedPlayers.Contains(item) == false)
+                    {
+                        completedPlayers.Add(item);
+                        break;
+                    }
+                }
+                EndGame();
+            }
+        }
+    }
+
+    private void EndGame()
+    {
+        currentState = GameState.Finished;
+        EndGameRPC(completedPlayers);
+    }
+
+    [ClientRpc]
+    private void EndGameRPC(List<uint> completedPlayers)
+    {
+        InputManager.InputActions.Player.Disable();
+        winManager.ShowWindow(players, completedPlayers, isServer);
     }
 }
 

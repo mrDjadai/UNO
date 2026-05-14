@@ -188,6 +188,11 @@ public class PlayerController : NetworkBehaviour
         CardManager.Instance.PlaceCard(Hand[pos]);
         PlaceCard(pos);
         Hand.RemoveAt(pos);
+
+        if (Hand.Count == 0)
+        {
+            TurnManager.Instance.OnPlayerHandEmpty(netId);
+        }
     }
 
     private void TryDrawCard(InputAction.CallbackContext context)

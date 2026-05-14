@@ -4,23 +4,11 @@ using UnityEngine;
 [RequireComponent(typeof(AudioSource))]
 public class BackgroundMusic : MonoBehaviour
 {
-    public static BackgroundMusic instance { get; private set; }
     [SerializeField] private AudioClip[] musicClips;
     private AudioSource audioSource;
 
     private void Awake()
     {
-        if (instance == null)
-        {
-            instance = this;
-        }
-
-        if (instance != this)
-        {
-            Destroy(gameObject);
-        }
-        DontDestroyOnLoad(gameObject);
-
         StopAllCoroutines();
         StartCoroutine(CheckMusic());
     }

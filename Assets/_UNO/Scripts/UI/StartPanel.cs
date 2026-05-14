@@ -7,6 +7,7 @@ using DG.Tweening;
 
 public class StartPanel : NetworkBehaviour
 {
+    public bool BlockControl => isServer && !TurnManager.Instance.IsStarted;
     [SerializeField] private CanvasGroup group;
     [SerializeField] private Button startButton;
     [SerializeField] private TMP_Text countText;
@@ -40,7 +41,7 @@ public class StartPanel : NetworkBehaviour
         group.blocksRaycasts = true;
         startButton.onClick.AddListener(OnButtonClick);
         InputManager.Instance.SetCursorLocked(false);
-        InputManager.InputActions.Disable();
+        InputManager.InputActions.Player.Disable();
 
     }
 
@@ -68,7 +69,7 @@ public class StartPanel : NetworkBehaviour
 
         TurnManager.Instance.StartGame();
 
-        InputManager.InputActions.Enable();
+        InputManager.InputActions.Player.Enable();
         InputManager.Instance.SetCursorLocked(true);
     }
 }

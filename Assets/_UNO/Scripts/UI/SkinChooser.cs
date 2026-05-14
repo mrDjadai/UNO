@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using TMPro;
 
@@ -5,9 +6,11 @@ public class SkinChooser : MonoBehaviour
 {
     [SerializeField] private TMP_InputField nickField;
     [SerializeField] private TMP_Text nickText;
+    [SerializeField] private float nickChangeDuration;
 
     [SerializeField] private Animator[] skinPreviews;
 
+    private Coroutine changeNickCor;
     private int skin;
 
     private void Awake()
@@ -47,6 +50,13 @@ public class SkinChooser : MonoBehaviour
         }
     }
 
+    private IEnumerator OnNickChange()
+    {
+        nickText.text = "Ник сменён";
+        yield return new WaitForSeconds(nickChangeDuration);
+        nickText.text = "";
+    }
+
     private bool ValidateInput(string input)
     {
         if (input.Length == 0 || input.Length > 20)
@@ -73,6 +83,11 @@ public class SkinChooser : MonoBehaviour
         {
             return;
         }
+        if (changeNickCor != null)
+        {
+            StopCoroutine(changeNickCor);
+        }
+        changeNickCor = StartCoroutine(OnNickChange());
         PlayerPrefs.SetString("Nickname", nickField.text);
     }
 

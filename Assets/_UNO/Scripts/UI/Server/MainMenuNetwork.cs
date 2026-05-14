@@ -1,8 +1,9 @@
 using Mirror;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using TMPro;
 using UnityEngine;
-using System.Text;
-using UnityEngine.UI;
 
 public class MainMenuNetwork : MonoBehaviour
 {
@@ -10,18 +11,13 @@ public class MainMenuNetwork : MonoBehaviour
     [SerializeField] private NetworkManager networkManager;
 
     [Header("UI")]
-    [SerializeField] private TMP_InputField serverNameInput;
     [SerializeField] private TMP_InputField ipInput;
     [SerializeField] private TMP_InputField portInput;
-    [SerializeField] private Toggle isPublic;
 
     public bool alwaysAllowWildCards { get; set; }
     public bool summarizeGetCards { get; set; }
     public bool takeOnlyOneCard { get; set; }
     public bool onlyOneWinner { get; set; }
-
-    [Header("Scene")]
-    [SerializeField] private string gameScene = "Game";
 
     [Header("Port Validation")]
     [SerializeField] private ushort defaultPort = 7777;
@@ -86,37 +82,40 @@ public class MainMenuNetwork : MonoBehaviour
 
     public void CreateServer()
     {
-        if (isPublic.isOn)
-        {
-            CreateGlobalServer();
-        }
-        else
-        {
-            CreateLocalServer();
-        }
-    }    
+        CreateLocalServer();
+    }
 
     public void CreateLocalServer()
     {
         ApplySettings();
 
+        ushort freePort = GetFreePort();
+
+        TelepathyTransport transport =
+            Transport.active as TelepathyTransport;
+
+        transport.port = freePort;
+
+        portInput.text = freePort.ToString();
+
+        PlayerPrefs.SetInt("ServerPort", freePort);
+
         networkManager.StartHost();
-
-        PlayerPrefs.SetInt("ServerPort", defaultPort);
-
-//        networkManager.ServerChangeScene(gameScene);
     }
 
-    public void CreateGlobalServer()
+    private ushort GetFreePort()
     {
-        ApplySettings();
+        TcpListener listener =
+            new TcpListener(IPAddress.Any, 0);
 
-        networkManager.StartHost();
+        listener.Start();
 
-        MasterServerClient.Instance.RegisterServer(
-            serverNameInput.text);
+        ushort port =
+            (ushort)((IPEndPoint)listener.LocalEndpoint).Port;
 
-//        networkManager.ServerChangeScene(gameScene);
+        listener.Stop();
+
+        return port;
     }
 
     public void ConnectLocal()
@@ -127,21 +126,6 @@ public class MainMenuNetwork : MonoBehaviour
         transport.port = ushort.Parse(portInput.text);
 
         networkManager.StartClient();
-    }
-
-    public void ConnectGlobal(string address, ushort port)
-    {
-        networkManager.networkAddress = address;
-
-        TelepathyTransport transport = Transport.active as TelepathyTransport;
-
-        if (transport != null)
-        {
-            transport.port = port;
-        }
-
-        networkManager.StartClient();
-
     }
 
     private void ApplySettings()

@@ -7,7 +7,7 @@ public class BackgroundMusic : MonoBehaviour
     [SerializeField] private AudioClip[] musicClips;
     private AudioSource audioSource;
 
-    private void Awake()
+    private void Start()
     {
         StopAllCoroutines();
         StartCoroutine(CheckMusic());

@@ -15,6 +15,7 @@ public class StartPanel : NetworkBehaviour
     [SerializeField] private string noPlayersTxt;
     [SerializeField] private string canStartTxt;
     [SerializeField] private float hideDuration = 0.5f;
+    private bool started;
 
     private void Awake()
     {
@@ -35,6 +36,14 @@ public class StartPanel : NetworkBehaviour
     {
         base.OnStartServer();
         TurnManager.Instance.OnPlayersListUpdated += UpdateVisual;
+
+        Show();
+    }
+
+    public void Show()
+    {
+        started = false;
+        transform.localScale = Vector3.one;
         UpdateVisual(TurnManager.Instance.GetLocalPlayersInfo());
         group.alpha = 1;
         group.interactable = true;
@@ -42,9 +51,7 @@ public class StartPanel : NetworkBehaviour
         startButton.onClick.AddListener(OnButtonClick);
         InputManager.Instance.SetCursorLocked(false);
         InputManager.InputActions.Player.Disable();
-
     }
-
     private void OnDisable()
     {
         if (NetworkServer.active)
@@ -65,11 +72,17 @@ public class StartPanel : NetworkBehaviour
 
     private void OnButtonClick()
     {
+        if (started)
+        {
+            return;
+        }
+
         group.transform.DOScale(Vector3.zero, hideDuration);
 
         TurnManager.Instance.StartGame();
 
         InputManager.InputActions.Player.Enable();
         InputManager.Instance.SetCursorLocked(true);
+        started = true;
     }
 }

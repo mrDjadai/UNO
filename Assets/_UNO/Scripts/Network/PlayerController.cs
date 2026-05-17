@@ -5,29 +5,41 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
 
+[RequireComponent(typeof(AudioSource))]
 public class PlayerController : NetworkBehaviour
 {
     public static PlayerController LocalPlayer { get; private set; }
+
+    [SerializeField] private AudioClip drawCardClip;
+    [SerializeField] private AudioClip playCardClip;
+    [SerializeField] private AudioClip selectCardClip;
+    [SerializeField] private AudioClip skipClip;
 
     [SerializeField] private MessageValue messages;
     [SerializeField] private GameObject cameraOrigin;
     [SerializeField] private HandVisualizer handVisualizer;
     [SerializeField] private Skin[] skins;
+    private Skin currentSkin;
 
     [SerializeField] private Transform nickOrigin;
 
     [SerializeField] private TMP_Text nickText;
 
+    [SyncVar] private bool saidUno = true;
+    [SyncVar] public bool saidUnoSafe;
+
     public readonly SyncList<CardData> Hand = new();
     private bool drawCard;
     private bool currentTurn;
+    private AudioSource source;
+
 
     public uint PlayerId => netId;
     private int selectedCard = 0;
-    private string nickName;
 
     private void Start()
     {
+        source = GetComponent<AudioSource>();
         cameraOrigin.SetActive(isLocalPlayer);
         if (!isLocalPlayer)
         {
@@ -42,6 +54,14 @@ public class PlayerController : NetworkBehaviour
             InputManager.InputActions.Player.ScrollCards.performed += ScrollCards;
             InputManager.InputActions.Player.DrawCard.performed += TryDrawCard;
             InputManager.InputActions.Player.UseCard.performed += TryPlaceCard;
+            InputManager.InputActions.Player.Uno.performed += TrySayUno;
+        }
+        else
+        {
+            foreach (var item in skins)
+            {
+                item.SetLayer(0);
+            }
         }
         TurnManager.Instance.OnTurnChanged += StartTurn;
     }
@@ -101,11 +121,12 @@ public class PlayerController : NetworkBehaviour
 
     private void OnDestroy()
     {
-        if (isLocalPlayer)
+        if (isLocalPlayer && InputManager.InputActions != null)
         {
             InputManager.InputActions.Player.ScrollCards.performed -= ScrollCards;
             InputManager.InputActions.Player.DrawCard.performed -= TryDrawCard;
             InputManager.InputActions.Player.UseCard.performed -= TryPlaceCard;
+            InputManager.InputActions.Player.Uno.performed -= TrySayUno;
         }
     }
 
@@ -140,6 +161,8 @@ public class PlayerController : NetworkBehaviour
 
         newSelected =
             (newSelected + Hand.Count) % Hand.Count;
+
+        source.PlayOneShot(selectCardClip);
 
         SelectCard(newSelected);
     }
@@ -189,10 +212,30 @@ public class PlayerController : NetworkBehaviour
         PlaceCard(pos);
         Hand.RemoveAt(pos);
 
+        if (Hand.Count == 1)
+        {
+            saidUno = false;
+            TurnManager.Instance.StartUnoTimer(netId);
+        }
+
         if (Hand.Count == 0)
         {
             TurnManager.Instance.OnPlayerHandEmpty(netId);
         }
+    }
+
+    [Server]
+    public void ClearHand()
+    {
+        Hand.Clear();
+        ClearHandRPC();
+    }
+
+    [ClientRpc]
+    private void ClearHandRPC()
+    {
+        handVisualizer.ResetFirstSelect();
+        handVisualizer.ClearVisual();
     }
 
     private void TryDrawCard(InputAction.CallbackContext context)
@@ -216,6 +259,7 @@ public class PlayerController : NetworkBehaviour
         if (isSkipped)
         {
             MessageShower.Instance.Show(messages.Message["SkipTurn"]);
+            source.PlayOneShot(skipClip);
             OnTurnSkip();
         }
         else
@@ -233,6 +277,70 @@ public class PlayerController : NetworkBehaviour
         }
 
         OnDrawCardCmd(isSkipped);
+    }
+
+    private void TrySayUno(InputAction.CallbackContext context)
+    {
+        PlayerController lastPlayer = TurnManager.Instance.GetLastPlayer();
+
+        if (lastPlayer.netId != netId)
+        {
+
+            SaidUnoResult res = lastPlayer.OnSaidUno();
+
+            switch (res)
+            {
+                case SaidUnoResult.NotUno:
+                    MessageShower.Instance.Show(messages.Message["NotUno"]);
+                    break;
+                case SaidUnoResult.SaidUno:
+                    MessageShower.Instance.Show(messages.Message["UnoSaid"]);
+                    break;
+                case SaidUnoResult.NotSaidUno:
+                    AddUnoCards(lastPlayer.netId);
+                    CmdSayUno();
+                    break;
+                case SaidUnoResult.SafeTime:
+                    MessageShower.Instance.Show(messages.Message["UnoSafe"]);
+                    break;
+            }
+            return;
+        }
+
+        if (Hand.Count > 1)
+        {
+            MessageShower.Instance.Show(messages.Message["NotUno"]);
+            return;
+        }
+
+        if (saidUno)
+        {
+            MessageShower.Instance.Show(messages.Message["UnoSaid"]);
+
+            return;
+        }
+
+        CmdSayUnoPlayer();
+    }
+
+    [Command]
+    private void CmdSayUnoPlayer()
+    {
+        saidUno = true;
+        SayUnoRPC();
+    }
+
+
+    [Command]
+    private void CmdSayUno()
+    {
+        SayUnoRPC();
+    }
+
+    [ClientRpc]
+    private void SayUnoRPC()
+    {
+        source.PlayOneShot(currentSkin.unoClip);
     }
 
     [Command]
@@ -303,6 +411,7 @@ public class PlayerController : NetworkBehaviour
     public void MoveCardToHand(CardData data)
     {
         handVisualizer.MoveCardToHand(data, netId);
+        source.PlayOneShot(drawCardClip);
     }
 
     [ClientRpc]
@@ -315,6 +424,7 @@ public class PlayerController : NetworkBehaviour
     public void PlaceCard(int num)
     {
         handVisualizer.PlaceCard(num);
+        source.PlayOneShot(playCardClip);
     }
 
 
@@ -395,6 +505,43 @@ public class PlayerController : NetworkBehaviour
             item.SetActive(false);
         }
         skins[skinID].SetActive(true);
+        currentSkin = skins[skinID];
+    }
+
+    private SaidUnoResult OnSaidUno()
+    {
+        if (Hand.Count > 1)
+        {
+            return SaidUnoResult.NotUno;
+        }
+
+        if (saidUno)
+        {
+            return SaidUnoResult.SaidUno;
+        }
+
+        if (saidUnoSafe)
+        {
+            return SaidUnoResult.SafeTime;
+        }
+
+        return SaidUnoResult.NotSaidUno;
+    }
+
+    [Command]
+    private void AddUnoCards(uint id)
+    {
+        CardManager.Instance.AddCardToPlayer(id);
+        CardManager.Instance.AddCardToPlayer(id);
+        NetworkServer.spawned[id].GetComponent<PlayerController>().saidUno = true;
+    }
+
+    public enum SaidUnoResult
+    {
+        NotUno,
+        SaidUno,
+        NotSaidUno,
+        SafeTime
     }
 }
 
@@ -402,12 +549,21 @@ public class PlayerController : NetworkBehaviour
 public struct Skin
 {
     [SerializeField] private GameObject[] parts;
+    public AudioClip unoClip;
 
     public void SetActive(bool active)
     {
         foreach (var item in parts)
         {
             item.SetActive(active);
+        }
+    }
+
+    public void SetLayer(int layer)
+    {
+        foreach (var item in parts)
+        {
+            item.layer = layer;
         }
     }
 }

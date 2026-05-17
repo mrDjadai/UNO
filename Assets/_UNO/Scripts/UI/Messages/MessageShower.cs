@@ -2,6 +2,7 @@ using UnityEngine;
 using DG.Tweening;
 using TMPro;
 
+[RequireComponent(typeof(AudioSource))]
 public class MessageShower : MonoBehaviour
 {
     public static MessageShower Instance { get; private set; }
@@ -9,7 +10,7 @@ public class MessageShower : MonoBehaviour
     [SerializeField] private float hideTime;
     [SerializeField] private TMP_Text text;
     [SerializeField] private Color textColor;
-
+    private AudioSource source;
     private Tween tween;
 
     private void Awake()
@@ -22,7 +23,7 @@ public class MessageShower : MonoBehaviour
         {
             Destroy(gameObject);
         }
-
+        source = GetComponent<AudioSource>();
         text.color = Color.clear;
     }
 
@@ -35,5 +36,6 @@ public class MessageShower : MonoBehaviour
         text.text = txt;
         text.color = textColor;
         tween = text.DOColor(Color.clear, hideTime).SetDelay(showTime);
+        source.Play();
     }
 }

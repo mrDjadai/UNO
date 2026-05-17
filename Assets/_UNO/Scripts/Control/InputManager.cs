@@ -24,4 +24,9 @@ public class InputManager : MonoBehaviour
         InputActions = new GameInput();
         InputActions.Enable();
     }
+
+    private void OnDestroy()
+    {
+        InputActions.Disable();
+    }
 }

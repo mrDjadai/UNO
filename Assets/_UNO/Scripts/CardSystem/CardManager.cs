@@ -61,10 +61,19 @@ public class CardManager : NetworkBehaviour
         turnSkipped = true;
     }
 
+    [Server]
     public void OnStartGame()
     {
+        Debug.Log("Start Game");
         GenerateDeck();
         ShuffleDeck();
+        if (upperCard != null)
+        {
+            Destroy(upperCard.gameObject);
+            upperCard = null;
+            currentCard = new CardData();
+        }
+
 
         CardData firstCard;
 
@@ -88,6 +97,7 @@ public class CardManager : NetworkBehaviour
     [Server]
     private void DrawStartCards()
     {
+        Debug.Log("Draw cards");
         StartCoroutine(SpawnStartCards());
     }
 
@@ -249,6 +259,16 @@ public class CardManager : NetworkBehaviour
         base.OnStartClient();
 
         StartCoroutine(WaitForLocalPlayer());
+        TurnManager.Instance.OnPlayersListUpdated += OnPlayerListUpdate;
+    }
+
+    private void OnPlayerListUpdate(Dictionary<uint, PlayerInfo> dict)
+    {
+        if (NetworkClient.localPlayer == null)
+        {
+            return; 
+        }
+        RotateDeckToPlayer();
     }
 
     private IEnumerator WaitForLocalPlayer()
@@ -287,7 +307,7 @@ public class CardManager : NetworkBehaviour
         }
 
         card.Init(data, isVisible);
-        card.MoveToPoint(targetPoint, useJump);
+        card.SetTarget(targetPoint, useJump);
         return card;
     }
 
@@ -340,5 +360,13 @@ public class CardManager : NetworkBehaviour
         }
         upperCard = card;
         card.transform.position = pilePoint.position;
+    }
+
+    public void DestroyUpperCard()
+    {
+        if (upperCard != null)
+        {
+            Destroy(upperCard.gameObject);
+        }
     }
 }

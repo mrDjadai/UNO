@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using Mirror;
 using UnityEngine;
 using DG.Tweening;
 
+[RequireComponent(typeof(AudioSource))]
 public class TurnManager : NetworkBehaviour
 {
     public static TurnManager Instance { get; private set; }
@@ -18,6 +20,11 @@ public class TurnManager : NetworkBehaviour
     private readonly Dictionary<uint, PlayerInfo> players = new();
     private readonly List<uint> turnOrder = new();
     private List<uint> completedPlayers = new List<uint>();
+    [SyncVar] private uint lastPlayer;
+
+    [SerializeField] private AudioClip changeTurnClip;
+    [SerializeField] private AudioClip gameEndClip;
+    [SerializeField] private float unoSafeTime = 2f;
 
     [SyncVar] private int currentTurnIndex = 0;
     [SyncVar(hook = nameof(NotifyChangeDirection))] private int direction = -1;
@@ -29,6 +36,10 @@ public class TurnManager : NetworkBehaviour
     [SerializeField] private Transform centerPoint;
     [SerializeField] private float radius = 5f;
     [SerializeField] private WinManager winManager;
+    [SerializeField] private StartPanel startPanel;
+
+    private AudioSource audioSource;
+    private Coroutine unoTimer;
 
     private void Awake()
     {
@@ -37,6 +48,7 @@ public class TurnManager : NetworkBehaviour
         {
             item.SetActive(true);
         }
+        audioSource = GetComponent<AudioSource>();
     }
 
     [Server]
@@ -57,6 +69,27 @@ public class TurnManager : NetworkBehaviour
 
         RecalculatePositions();
         UpdateClients();
+    }
+
+    [Server]
+    public void StartUnoTimer(uint player)
+    {
+        if (unoTimer != null)
+        {
+            StopCoroutine(unoTimer);
+        }
+        var idenity = NetworkServer.spawned[player];
+        var pl = idenity.GetComponent<PlayerController>();
+        pl.saidUnoSafe = true;
+
+        if (idenity != null)
+            unoTimer = StartCoroutine(SafeUno(pl));
+    }
+
+    private IEnumerator SafeUno(PlayerController player)
+    {
+        yield return new WaitForSeconds(unoSafeTime);
+        player.saidUnoSafe = false;
     }
 
     [Server]
@@ -83,12 +116,16 @@ public class TurnManager : NetworkBehaviour
     [Server]
     public void StartGame()
     {
-        if (turnOrder.Count == 0) return;
+        if (turnOrder.Count == 0) 
+            return;
+
         currentState = GameState.Started;
-        CardManager.Instance.OnStartGame();
         StartGameRPC();
+        CardManager.Instance.OnStartGame();
 
         currentTurnIndex = 0;
+        lastPlayer = turnOrder[0];
+
         NotifyTurnChanged();
     }
 
@@ -96,6 +133,7 @@ public class TurnManager : NetworkBehaviour
     private void StartGameRPC()
     {
         InputManager.InputActions.Player.Enable();
+        CardManager.Instance.DestroyUpperCard();
     }
 
     [Server]
@@ -103,6 +141,8 @@ public class TurnManager : NetworkBehaviour
     {
         if (turnOrder.Count == 0)
             return;
+
+        lastPlayer = turnOrder[currentTurnIndex];
 
         currentTurnIndex += direction;
 
@@ -185,6 +225,7 @@ public class TurnManager : NetworkBehaviour
     {
         OnTurnChanged?.Invoke(playerId);
         playerIndicator.DORotate(Vector3.down * players[playerId].tableAngle * Mathf.Rad2Deg, 0.5f);
+        audioSource.PlayOneShot(changeTurnClip);
     }
 
     [Server]
@@ -254,29 +295,29 @@ public class TurnManager : NetworkBehaviour
     {
         if (NetworkServer.active && NetworkClient.active)
         {
-            NetworkClient.Disconnect();
-            NetworkServer.Shutdown();
+            NetworkManager.singleton.StopHost();
         }
         else if (NetworkServer.active)
         {
-            NetworkServer.Shutdown();
+            NetworkManager.singleton.StopServer();
         }
         else if (NetworkClient.active)
         {
-            NetworkClient.Disconnect();
+            NetworkManager.singleton.StopClient();
         }
     }
 
     [Server]
     public void OnPlayerHandEmpty(uint netId)
     {
+        completedPlayers.Add(netId);
+
         if (ServerDataContainer.Instance.OnlyOneWinner)
         {
             EndGame();
         }
         else
         {
-            completedPlayers.Add(netId);
             turnOrder.Remove(netId);
 
             if (completedPlayers.Count == 3)
@@ -309,6 +350,43 @@ public class TurnManager : NetworkBehaviour
     {
         InputManager.InputActions.Player.Disable();
         winManager.ShowWindow(players, completedPlayers, isServer);
+        audioSource.PlayOneShot(gameEndClip);
+    }
+
+    [Server]
+    public void Restart()
+    {
+        turnOrder.Clear();
+        completedPlayers.Clear();
+
+        foreach (var item in players.Keys)
+        {
+            turnOrder.Add(item);
+
+            if (!NetworkClient.spawned.TryGetValue(item, out var identity))
+                continue;
+            identity.GetComponent<PlayerController>().ClearHand();
+        }
+        startPanel.Show();
+        RestartRPC();
+        direction = -1;
+    }
+
+    [ClientRpc]
+    private void RestartRPC()
+    {
+        winManager.Hide();
+    }
+
+    public PlayerController GetLastPlayer()
+    {
+        var indentity = NetworkClient.spawned[lastPlayer];
+
+        if (indentity == null)
+        {
+            return null;
+        }
+        return indentity.GetComponent<PlayerController>();
     }
 }
 

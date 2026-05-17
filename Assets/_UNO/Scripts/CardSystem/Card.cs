@@ -1,6 +1,7 @@
-using UnityEngine;
 using DG.Tweening;
 using System;
+using NaughtyAttributes;
+using UnityEngine;
 
 [RequireComponent(typeof(CardVisualisator))]
 public class Card : MonoBehaviour
@@ -24,6 +25,8 @@ public class Card : MonoBehaviour
     [SerializeField] private float jumpPower = 1f;
     [SerializeField] private float selectOffset = 0.01f;
     [SerializeField] private float selectVerticalOffset = 0.02f;
+    [SerializeField, Layer] private int defaultLayer;
+    [SerializeField, Layer] private int handLayer;
 
     private Vector3 currentTarget;
     private Vector3 currentTargetAngles;
@@ -34,6 +37,7 @@ public class Card : MonoBehaviour
     private Tween rotationTween;
     private Transform tr;
     private Action<Card> onMove;
+    private bool inHand;
 
     public void SetMoveAction(Action<Card> a)
     {
@@ -56,16 +60,20 @@ public class Card : MonoBehaviour
         cardVisualisator.Visualise(data.Value, data.Color);
     }
 
-    public void MoveToPoint(Transform point, bool useJump)
+    public void SetTarget(Transform point, bool useJump)
     {
-        MoveToPoint(point.position, point.eulerAngles, useJump);
+        SetTarget(point.position, point.eulerAngles, useJump);
     }
 
-    public void MoveToPoint(Vector3 point, Vector3 angles, bool useJump)
+    public void SetTarget(Vector3 point, Vector3 angles, bool useJump)
     {
-        currentTarget = point; 
+        currentTarget = point;
         currentTargetAngles = angles;
+        MoveToPoint(point, angles, useJump);
+    }
 
+    private void MoveToPoint(Vector3 point, Vector3 angles, bool useJump)
+    {
         if (moveTween != null)
         {
             moveTween.Kill();
@@ -89,8 +97,15 @@ public class Card : MonoBehaviour
     public void SetSelected(bool v)
     {
         cardVisualisator.SetSelected(v);
-        MoveToPoint(currentTarget + tr.forward * (v? selectOffset : -selectOffset), currentTargetAngles, false);
-        MoveToPoint(currentTarget + tr.up * (v? selectVerticalOffset: -selectVerticalOffset), currentTargetAngles, false);
+        if (v)
+        {
+            MoveToPoint(currentTarget + tr.forward * selectOffset
+                + tr.up * selectVerticalOffset, currentTargetAngles, false);
+        }
+        else
+        {
+            MoveToPoint(currentTarget, currentTargetAngles, false);
+        }
     }
 
     public void SetSelectedTexture(bool v)
@@ -103,6 +118,27 @@ public class Card : MonoBehaviour
         if (onMove != null)
         {
             onMove.Invoke(this);
+        }
+    }
+
+    public void SetInHandMode(bool v)
+    {
+        if (inHand == v)
+        {
+            return;
+        }
+        inHand = v;
+
+        SetLayer(transform, v ? handLayer : defaultLayer);
+    }
+
+    private void SetLayer(Transform t, int layer)
+    {
+        t.gameObject.layer = layer;
+
+        for (int i = 0; i < t.childCount; i++)
+        {
+            SetLayer(t.GetChild(i), layer);
         }
     }
 }

@@ -11,6 +11,7 @@ public class WinManager : MonoBehaviour
 
     public void ShowWindow(Dictionary<uint, PlayerInfo> players, List<uint> completedPlayers, bool isServer)
     {
+        InputManager.Instance.SetCursorLocked(false);
         window.DOScale(Vector3.one, 0.5f);
         restartButton.SetActive(isServer);
 
@@ -27,5 +28,10 @@ public class WinManager : MonoBehaviour
             }
             winnerText.text = txt;
         }
+    }
+
+    public void Hide()
+    {
+        window.DOScale(Vector3.zero, 0.5f);
     }
 }

@@ -127,6 +127,15 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Uno"",
+                    ""type"": ""Button"",
+                    ""id"": ""ba0b8248-6e55-427c-8470-cc45f03f9b6e"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -261,6 +270,17 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
                     ""action"": ""UseCard"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""95b0c78b-76ea-4d0d-863b-4681ff9cab7e"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Uno"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -301,6 +321,7 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
         m_Player_ScrollCards = m_Player.FindAction("ScrollCards", throwIfNotFound: true);
         m_Player_DrawCard = m_Player.FindAction("DrawCard", throwIfNotFound: true);
         m_Player_UseCard = m_Player.FindAction("UseCard", throwIfNotFound: true);
+        m_Player_Uno = m_Player.FindAction("Uno", throwIfNotFound: true);
         // Menu
         m_Menu = asset.FindActionMap("Menu", throwIfNotFound: true);
         m_Menu_Escape = m_Menu.FindAction("Escape", throwIfNotFound: true);
@@ -389,6 +410,7 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_ScrollCards;
     private readonly InputAction m_Player_DrawCard;
     private readonly InputAction m_Player_UseCard;
+    private readonly InputAction m_Player_Uno;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -416,6 +438,10 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/UseCard".
         /// </summary>
         public InputAction @UseCard => m_Wrapper.m_Player_UseCard;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Uno".
+        /// </summary>
+        public InputAction @Uno => m_Wrapper.m_Player_Uno;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -454,6 +480,9 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
             @UseCard.started += instance.OnUseCard;
             @UseCard.performed += instance.OnUseCard;
             @UseCard.canceled += instance.OnUseCard;
+            @Uno.started += instance.OnUno;
+            @Uno.performed += instance.OnUno;
+            @Uno.canceled += instance.OnUno;
         }
 
         /// <summary>
@@ -477,6 +506,9 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
             @UseCard.started -= instance.OnUseCard;
             @UseCard.performed -= instance.OnUseCard;
             @UseCard.canceled -= instance.OnUseCard;
+            @Uno.started -= instance.OnUno;
+            @Uno.performed -= instance.OnUno;
+            @Uno.canceled -= instance.OnUno;
         }
 
         /// <summary>
@@ -641,6 +673,13 @@ public partial class @GameInput: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnUseCard(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Uno" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnUno(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Menu" which allows adding and removing callbacks.

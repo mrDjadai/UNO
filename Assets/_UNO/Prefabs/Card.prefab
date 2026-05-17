@@ -324,8 +324,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Card
   movingSpeed: 1
   jumpPower: 0.1
-  selectOffset: -0.002
+  selectOffset: -0.004
   selectVerticalOffset: 0.05
+  defaultLayer: 0
+  handLayer: 6
 --- !u!114 &761672293649970765
 MonoBehaviour:
   m_ObjectHideFlags: 0

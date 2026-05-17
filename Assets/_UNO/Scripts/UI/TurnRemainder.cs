@@ -40,6 +40,11 @@ public class TurnRemainder : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(waitTime);
+
+            if (TurnManager.Instance.IsStarted == false)
+            {
+                break;
+            }
             audioSource.Play();
 
             Sequence sequence = DOTween.Sequence();

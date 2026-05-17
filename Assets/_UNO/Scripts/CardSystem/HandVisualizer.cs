@@ -14,6 +14,7 @@ public class HandVisualizer : MonoBehaviour
     private float handCardSpacing => maxHandCardSpacing * cardsToSpacing.Evaluate(cards.Count);
     private List<Card> cards = new List<Card>();
     private bool hasFirstSelected;
+    private int selected;
 
     public void ResetFirstSelect()
     {
@@ -23,8 +24,18 @@ public class HandVisualizer : MonoBehaviour
     public void MoveCardToHand(CardData data, uint netId)
     {
         Card card = CardManager.Instance.SpawnCard(data, handPoint, netId, false);
+        card.SetInHandMode(true);
         cards.Add(card);
         RedrawHand();
+    }
+
+    public void ClearVisual()
+    {
+        foreach (var item in cards)
+        {
+            Destroy(item.gameObject);
+        }
+        cards.Clear();
     }
 
     public void PlaceCard(int id)
@@ -33,11 +44,12 @@ public class HandVisualizer : MonoBehaviour
 
         c.SetSelectedTexture(false);
         c.IsVisible = true;
+        c.SetInHandMode(false);
 
         cards.RemoveAt(id);
         RedrawHand();
 
-        c.MoveToPoint(CardManager.Instance.PilePoint.position + Vector3.up * 0.001f, 
+        c.SetTarget(CardManager.Instance.PilePoint.position + Vector3.up * 0.001f, 
             CardManager.Instance.PilePoint.eulerAngles, false);
 
         c.SetMoveAction(CardManager.Instance.SetUpperCard);
@@ -98,7 +110,8 @@ public class HandVisualizer : MonoBehaviour
                 handPoint.eulerAngles +
                 new Vector3(0f, 0f, angle);
 
-            card.MoveToPoint(position, rotation, false);
+            card.SetTarget(position, rotation, false);
+            cards[i].SetSelected(selected == i);
         }
     }
 
@@ -110,5 +123,6 @@ public class HandVisualizer : MonoBehaviour
         }
         cards[newSelected].SetSelected(true);
         hasFirstSelected = true;
+        selected = newSelected;
     }
 }

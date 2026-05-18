@@ -24,6 +24,8 @@ public class HandVisualizer : MonoBehaviour
     public void MoveCardToHand(CardData data, uint netId)
     {
         Card card = CardManager.Instance.SpawnCard(data, handPoint, netId, false);
+        card.transform.parent = transform;
+
         card.SetInHandMode(true);
         cards.Add(card);
         RedrawHand();
@@ -45,6 +47,7 @@ public class HandVisualizer : MonoBehaviour
         c.SetSelectedTexture(false);
         c.IsVisible = true;
         c.SetInHandMode(false);
+        c.transform.parent = null;
 
         cards.RemoveAt(id);
         RedrawHand();

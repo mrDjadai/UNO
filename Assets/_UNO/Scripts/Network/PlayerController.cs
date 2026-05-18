@@ -1,9 +1,10 @@
 ﻿using Mirror;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using System.Collections;
+using static ServerDataContainer;
 
 [RequireComponent(typeof(AudioSource))]
 public class PlayerController : NetworkBehaviour
@@ -104,7 +105,10 @@ public class PlayerController : NetworkBehaviour
     public override void OnStartServer()
     {
         base.OnStartServer();
-        TurnManager.Instance.RegisterPlayer(this);
+        if (!TurnManager.Instance.IsGameFull && !TurnManager.Instance.IsStarted)
+        {
+            TurnManager.Instance.RegisterPlayer(this);
+        }
     }
 
     public override void OnStartClient()
@@ -112,12 +116,37 @@ public class PlayerController : NetworkBehaviour
         base.OnStartClient();
         StartCoroutine(InitNickname());
 
-        if (isLocalPlayer)
+        if (!isLocalPlayer)
+        {
+            return;
+        }
+
+        if (!TurnManager.Instance.IsGameFull && !TurnManager.Instance.IsStarted)
         {
             CmdSendPlayerData(PlayerPrefs.GetString("Nickname"), PlayerPrefs.GetInt("Skin"));
         }
+
+        ServerDataContainer.Instance.SetDisconnectType(DisconnectType.NetworkError);
+
+        if (TurnManager.Instance.IsStarted)
+        {
+            ServerDataContainer.Instance.SetDisconnectType(DisconnectType.GameStarted);
+            StartCoroutine(DisconnectCor());
+
+        }
+        else if (TurnManager.Instance.IsGameFull)
+        {
+            ServerDataContainer.Instance.SetDisconnectType(DisconnectType.FullGame);
+            StartCoroutine(DisconnectCor());
+        }
     }
 
+    private IEnumerator DisconnectCor()
+    {
+        yield return new WaitForEndOfFrame();
+        NetworkClient.Disconnect();
+
+    }
 
     private void OnDestroy()
     {
@@ -180,6 +209,12 @@ public class PlayerController : NetworkBehaviour
         }
 
         if (CardManager.Instance.CanUseCard(Hand[selectedCard]) == false)
+        {
+            MessageShower.Instance.Show(messages.Message["IncorrectCard"]);
+            return;
+        }
+
+        if (!ServerDataContainer.Instance.AlwaysAllowWildCards && Hand[selectedCard].Color == CardData.CardColor.Black && CanUseAnyNotWildCard())
         {
             MessageShower.Instance.Show(messages.Message["IncorrectCard"]);
             return;
@@ -453,6 +488,22 @@ public class PlayerController : NetworkBehaviour
     {
         foreach (var item in Hand)
         {
+            if (CardManager.Instance.CanUseCard(item))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool CanUseAnyNotWildCard()
+    {
+        foreach (var item in Hand)
+        {
+            if (item.Color == CardData.CardColor.Black)
+            {
+                continue;
+            }
             if (CardManager.Instance.CanUseCard(item))
             {
                 return true;

@@ -7,8 +7,7 @@ using UnityEngine;
 
 public class MainMenuNetwork : MonoBehaviour
 {
-    [Header("Network")]
-    [SerializeField] private NetworkManager networkManager;
+    private NetworkManager networkManager => NetworkManager.singleton;
 
     [Header("UI")]
     [SerializeField] private TMP_InputField ipInput;
@@ -82,11 +81,6 @@ public class MainMenuNetwork : MonoBehaviour
 
     public void CreateServer()
     {
-        CreateLocalServer();
-    }
-
-    public void CreateLocalServer()
-    {
         ApplySettings();
 
         ushort freePort = GetFreePort();
@@ -127,6 +121,7 @@ public class MainMenuNetwork : MonoBehaviour
 
         networkManager.StartClient();
     }
+
 
     private void ApplySettings()
     {

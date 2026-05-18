@@ -2262,6 +2262,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  messageValue: {fileID: 11400000, guid: 4e2f3aa89ea71ca42a1cfb963899a99e, type: 2}
 --- !u!4 &167207936
 Transform:
   m_ObjectHideFlags: 0

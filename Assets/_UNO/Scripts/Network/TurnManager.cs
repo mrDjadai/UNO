@@ -11,6 +11,7 @@ public class TurnManager : NetworkBehaviour
     public static TurnManager Instance { get; private set; }
     public bool IsStarted => currentState == GameState.Started;
     public bool Direction => direction > 0;
+    public bool IsGameFull => players.Count > 6;
 
     [SyncVar] private GameState currentState = GameState.WaitForStart;
     public event Action<Dictionary<uint, PlayerInfo>> OnPlayersListUpdated;
@@ -293,6 +294,7 @@ public class TurnManager : NetworkBehaviour
 
     public void Exit()
     {
+        ServerDataContainer.Instance.SetDisconnectType(ServerDataContainer.DisconnectType.ButtonPressed);
         if (NetworkServer.active && NetworkClient.active)
         {
             NetworkManager.singleton.StopHost();
@@ -387,6 +389,12 @@ public class TurnManager : NetworkBehaviour
             return null;
         }
         return indentity.GetComponent<PlayerController>();
+    }
+
+    private void OnApplicationQuit()
+    {
+        NetworkClient.Disconnect();
+        NetworkServer.Shutdown();
     }
 }
 
